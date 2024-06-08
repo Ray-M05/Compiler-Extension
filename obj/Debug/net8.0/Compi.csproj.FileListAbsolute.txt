@@ -1,0 +1,14 @@
+C:\Pro\Compi\bin\Debug\net8.0\Compi.exe
+C:\Pro\Compi\bin\Debug\net8.0\Compi.deps.json
+C:\Pro\Compi\bin\Debug\net8.0\Compi.runtimeconfig.json
+C:\Pro\Compi\bin\Debug\net8.0\Compi.dll
+C:\Pro\Compi\bin\Debug\net8.0\Compi.pdb
+C:\Pro\Compi\obj\Debug\net8.0\Compi.GeneratedMSBuildEditorConfig.editorconfig
+C:\Pro\Compi\obj\Debug\net8.0\Compi.AssemblyInfoInputs.cache
+C:\Pro\Compi\obj\Debug\net8.0\Compi.AssemblyInfo.cs
+C:\Pro\Compi\obj\Debug\net8.0\Compi.csproj.CoreCompileInputs.cache
+C:\Pro\Compi\obj\Debug\net8.0\Compi.dll
+C:\Pro\Compi\obj\Debug\net8.0\refint\Compi.dll
+C:\Pro\Compi\obj\Debug\net8.0\Compi.pdb
+C:\Pro\Compi\obj\Debug\net8.0\Compi.genruntimeconfig.cache
+C:\Pro\Compi\obj\Debug\net8.0\ref\Compi.dll
