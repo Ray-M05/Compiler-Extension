@@ -18,16 +18,54 @@ public class Lexer {
     private string input;
     private List<Token> tokens;
 
-public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, string> {
+    public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, string> {
+
+    //Lines
     {TokenType.LineChange, @"\r"},
     {TokenType.Whitespace, @"\s+"},
-    {TokenType.For, @"\bfor\b"},
-    {TokenType.While, @"\bwhile\b"},
+
+    //Keywords
     {TokenType.Effect, @"\bEffect\b"},
     {TokenType.Card, @"\bCard\b"},
+    { TokenType.Name, @"\bName\b" },
+    { TokenType.Params, @"\bParams\b" },
+    { TokenType.Action, @"\bAction\b" },
+    { TokenType.Type, @"\bType\b" },
+    { TokenType.Faction, @"\bFaction\b" },
+    { TokenType.Power, @"\bPower\b" },
+    { TokenType.Range, @"\bRange\b" },
+    { TokenType.OnActivation, @"\bOnActivation\b" },
+    { TokenType.Selector, @"\bSelector\b" },
+    { TokenType.PostAction, @"\bPostAction\b" },
+    { TokenType.Source, @"\bSource\b" },
+    { TokenType.Single, @"\bSingle\b" },
+    { TokenType.Predicate, @"\bPredicate\b" },
+    { TokenType.In, @"\bin\b" },
+    { TokenType.Hand, @"\bhand\b" },
+    { TokenType.Deck, @"\bdeck\b" },
+    { TokenType.Board, @"\bboard\b" },
+    { TokenType.Context, @"\bcontext\b" },
+    { TokenType.TriggerPlayer, @"\bTriggerPlayer\b" },
+    { TokenType.Find, @"\bFind\b" },
+    { TokenType.Push, @"\bPush\b" },
+    { TokenType.SendBottom, @"\bSendBottom\b" },
+    { TokenType.Pop, @"\bPop\b" },
+    { TokenType.Remove, @"\bRemove\b" },
+    { TokenType.Shuffle, @"\bShuffle\b" },
+    { TokenType.Owner, @"\bOwner\b" },
+    { TokenType.NumberType, @"\bNumber\b" },
+    { TokenType.StringType, @"\bString\b" },
+
+    //Booleans
+    { TokenType.True, @"\btrue\b" },
+    { TokenType.False, @"\bfalse\b" },
+    {TokenType.For, @"\bfor\b"},
+    {TokenType.While, @"\bwhile\b"},
     {TokenType.If, @"\bif\b"},
     {TokenType.ElIf, @"\belif\b"},
     {TokenType.Else, @"\belse\b"},
+
+    //Operators
     {TokenType.Pow, @"\^"},
     {TokenType.Increment, @"\+\+"},
     {TokenType.Decrement, @"\-\-"},
@@ -42,16 +80,23 @@ public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, stri
     {TokenType.MoreEq, ">="},
     {TokenType.Less, "<"},
     {TokenType.More, ">"},
+
+    //Symbols
     {TokenType.SpaceConcatenation, "@@"},
     {TokenType.Concatenation, "@"},
     {TokenType.Assign, "="},
+    { TokenType.Colon, @":" },
+    { TokenType.Comma, @"," },        
+    { TokenType.Semicolon, @";" },
+    { TokenType.Arrow, @"=>" },
     {TokenType.LParen, @"\("},
     {TokenType.RParen, @"\)"},
     {TokenType.LBracket, @"\["},
     {TokenType.RBracket, @"\]"},
     {TokenType.LCurly, @"\{"},
     {TokenType.RCurly, @"\}"},
-    {TokenType.Boolean, @"\b(true|false)\b"},
+
+    //Identifiers
     {TokenType.Int, @"\b\d+\b"},
     {TokenType.String, "\".*?\""},
     {TokenType.Id, @"\b[A-Za-z_][A-Za-z_0-9]*\b"}
@@ -64,6 +109,8 @@ public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, stri
 
     public List<Token> Tokenize() 
     {
+        int row = 0;
+        int column = 0;
         while (input.Length!=0) 
         {
                 bool isfound = false;
@@ -72,9 +119,18 @@ public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, stri
                     Match match = Regex.Match(input,"^"+ pattern);
                     if (match.Success) 
                     {
-                        Token token = new Token(type, match.Value, (0,0));
+                        if(type!= TokenType.Whitespace && type!= TokenType.LineChange)
+                        {
+                        Token token = new Token(type, match.Value, (row,column));
                         tokens.Add(token);
+                        }
+                        if(type== TokenType.LineChange)
+                        {
+                        row++;
+                        column =0;
+                        }
                         input= input.Substring(match.Value.Length); 
+                        column+= match.Value.Length;
                         isfound = true;
                         break;
                     }
@@ -93,12 +149,16 @@ public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, stri
 
 
 public enum TokenType {
+
+    //Lines
     Whitespace,
     LineChange,
+
+    //Operators
     For,
     While,
-    Effect,
-    Card,
+    True,
+    False,
     If,
     ElIf,
     Else,
@@ -125,10 +185,45 @@ public enum TokenType {
     RBracket,
     LCurly,
     RCurly,
-    Boolean,
     Int,
     String,
-    Id
+    Id,
+    Colon,
+    Comma,
+    Semicolon,
+
+    //Keywords
+    Effect,
+    Card,
+    Name,
+    Params,
+    Action,
+    Type,
+    Faction,
+    Power,
+    Range,
+    OnActivation,
+    Selector,
+    PostAction,
+    Source,
+    Single,
+    Predicate,
+    In,
+    Hand,
+    Owner,
+    Deck,
+    Board,
+    Context,
+    TriggerPlayer,
+    Find,
+    Push,
+    SendBottom,
+    Pop,
+    Remove,
+    Shuffle,
+    NumberType,
+    StringType,
+    Arrow,
 }
 
 }

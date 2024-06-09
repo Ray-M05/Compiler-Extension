@@ -6,7 +6,7 @@
         {
             try
             {
-                string s = "" ;
+                string s = "a || 23" ;
                 Lexer l = new Lexer(s);
                 List<Token> tokens = l.Tokenize();
                 foreach (Token t in tokens)
