@@ -1,14 +1,14 @@
 using System.Text.RegularExpressions;
-namespace Compiler
-{
+namespace Compiler;
+
     public class Token 
     {
         public TokenType Type;
-        public string Value;
+        public string Meaning;
         public (int, int) PositionError;
         public Token(TokenType type, string value, (int, int) positionError){
             Type = type;
-            Value = value;
+            Meaning = value;
             PositionError = positionError;
         }
     }
@@ -64,17 +64,21 @@ public class Lexer {
     {TokenType.If, @"\bif\b"},
     {TokenType.ElIf, @"\belif\b"},
     {TokenType.Else, @"\belse\b"},
+    {TokenType.Not, @"!" },
+    {TokenType.And, @"\&\&"},
+    {TokenType.Or, @"\|\|"},
+
 
     //Operators
     {TokenType.Pow, @"\^"},
+    { TokenType.PlusEqual, @"+=" },
+    { TokenType.MinusEqual, @"-=" },
     {TokenType.Increment, @"\+\+"},
     {TokenType.Decrement, @"\-\-"},
     {TokenType.Plus, @"\+"},
     {TokenType.Minus, @"\-"},
     {TokenType.Multiply, @"\*"},
     {TokenType.Divide, @"\/"},
-    {TokenType.And, @"\&\&"},
-    {TokenType.Or, @"\|\|"},
     {TokenType.Equal, "=="},
     {TokenType.LessEq, "<="},
     {TokenType.MoreEq, ">="},
@@ -167,6 +171,8 @@ public enum TokenType {
     Decrement,
     Plus,
     Minus,
+    PlusEqual,
+    MinusEqual,
     Multiply,
     Divide,
     And,
@@ -191,6 +197,7 @@ public enum TokenType {
     Colon,
     Comma,
     Semicolon,
+    Not,
 
     //Keywords
     Effect,
@@ -226,7 +233,7 @@ public enum TokenType {
     Arrow,
 }
 
-}
+
 
 
 

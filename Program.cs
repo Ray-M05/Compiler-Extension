@@ -6,12 +6,12 @@
         {
             try
             {
-                string s = "a || 23" ;
+                string s = "a vt7tg \n || 23" ;
                 Lexer l = new Lexer(s);
                 List<Token> tokens = l.Tokenize();
                 foreach (Token t in tokens)
                 {
-                    Console.WriteLine(t.Value + " " + t.Type);
+                Console.WriteLine(t.Type.ToString()+ " in " + t.PositionError.Item1+" line "+ " and " + t.PositionError.Item2+ " column ");                
                 }
             } catch (Exception e)
             {
