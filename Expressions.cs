@@ -23,31 +23,6 @@ public class ProgramExpression: Expression
         throw new NotImplementedException();
     }
 }
-public class EffectInstance: Expression
-{
-    public Expression? Name;
-    public Expression? Params;
-    public Expression? Action;
-    public override object Evaluate()
-    {
-        throw new NotImplementedException();
-    }
-}
-public class CardInstance: Expression
-{
-    public Expression? Name;
-    public Expression? Type;
-    public Expression? Effect;
-    public Expression? Faction;
-    public Expression? Power;
-    public Expression? Range;
-    public Expression? OnActivation;
-
-    public override object Evaluate()
-    {
-        throw new NotImplementedException();
-    }
-}
 
 public class BinaryOperator : Expression
 {

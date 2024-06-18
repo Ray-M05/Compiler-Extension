@@ -5,28 +5,35 @@ namespace Compiler;
     {
         public TokenType Type;
         public string Meaning;
-        public (int, int) PositionError;
+        public Position PositionError { get; set;}
         public Token(TokenType type, string value, (int, int) positionError){
             Type = type;
             Meaning = value;
-            PositionError = positionError;
+            PositionError = new Position { Row = positionError.Item1, Column = positionError.Item2 };
         }
+    }
+
+        public struct Position
+    {
+        public int Row;
+        public int Column;
     }
     
 
-public class Lexer {
+public class Lexer { 
     private string input;
     private List<Token> tokens;
 
-    public Dictionary <TokenType, string> keywords = new Dictionary< TokenType, string> {
+    public Dictionary <TokenType, string> Keywords = new Dictionary< TokenType, string> {
 
     //Lines
-    {TokenType.LineChange, @"\r"},
+    { TokenType.LineChange, @"\r"},
     {TokenType.Whitespace, @"\s+"},
 
     //Keywords
-    {TokenType.Effect, @"\bEffect\b"},
-    {TokenType.Card, @"\bCard\b"},
+    {TokenType.Effect, @"\beffect\b"},
+    {TokenType.Card, @"\bcard\b"},
+    {TokenType.EffectParam, @"\bEffect\b"},
     { TokenType.Name, @"\bName\b" },
     { TokenType.Params, @"\bParams\b" },
     { TokenType.Action, @"\bAction\b" },
@@ -118,20 +125,20 @@ public class Lexer {
         while (input.Length!=0) 
         {
                 bool isfound = false;
-                foreach (TokenType type in keywords.Keys) {
-                    string pattern = keywords[type];
+                foreach (TokenType type in Keywords.Keys) {
+                    string pattern = Keywords[type];
                     Match match = Regex.Match(input,"^"+ pattern);
                     if (match.Success) 
                     {
                         if(type!= TokenType.Whitespace && type!= TokenType.LineChange)
                         {
-                        Token token = new Token(type, match.Value, (row,column));
-                        tokens.Add(token);
+                            Token token = new Token(type, match.Value, (row,column));
+                            tokens.Add(token);
                         }
                         if(type== TokenType.LineChange)
                         {
-                        row++;
-                        column =0;
+                            row++;
+                            column =0;
                         }
                         input= input.Substring(match.Value.Length); 
                         column+= match.Value.Length;
@@ -201,6 +208,7 @@ public enum TokenType {
 
     //Keywords
     Effect,
+    EffectParam,
     Card,
     Name,
     Params,

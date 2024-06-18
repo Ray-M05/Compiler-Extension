@@ -6,12 +6,12 @@
         {
             try
             {
-                string s = "a vt7tg \n || 23";
+                string s = "a vt7tg \n || 23*5+64";
                 Lexer l = new Lexer(s);
                 List<Token> tokens = l.Tokenize();
                 foreach (Token t in tokens)
                 {
-                Console.WriteLine(t.Type.ToString()+ " in " + t.PositionError.Item1+" line "+ " and " + t.PositionError.Item2+ " column ");                
+                Console.WriteLine(t.Type.ToString()+ " in " + t.PositionError.Row+" line "+ " and " + t.PositionError.Column+ " column ");                
                 }
                 Parser parser = new(tokens);
                 Expression root = parser.Parse();
@@ -23,7 +23,7 @@
             }
 
 
-        public static void PrintExpressionTree(Expression node, int indentLevel = 0)
+         static void PrintExpressionTree(Expression node, int indentLevel = 0)
         {
             node.Print(indentLevel);
             if (node is BinaryOperator binaryNode)

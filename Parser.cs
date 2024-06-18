@@ -117,7 +117,7 @@ public class Parser
                 position++;
                 return new BinaryOperator(left, right,token.Type);
             }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Item1} file and {token.PositionError.Item2} column({token.Type}), expected Comma or Semicolon");
+            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
         else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
         {
@@ -127,7 +127,7 @@ public class Parser
                 position++;
                 return new BinaryOperator(left, right,token.Type);
             }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Item1} file and {token.PositionError.Item2} column({token.Type}), expected Comma or Semicolon");
+            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
         else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
         {
@@ -137,10 +137,10 @@ public class Parser
                 position++;
                 return new BinaryOperator(left, right,token.Type);
             }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Item1} file and {token.PositionError.Item2} column({token.Type}), expected Comma or Semicolon");
+            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
         else
-        throw new Exception($"Unexpected assign token at {token.PositionError.Item1} file and {token.PositionError.Item2} column({token.Type})");
+        throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type})");
     }
     
     private Expression ParseGeneral()
