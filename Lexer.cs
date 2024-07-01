@@ -31,9 +31,9 @@ public class Lexer {
     {TokenType.Whitespace, @"\s+"},
 
     //Keywords
-    {TokenType.Effect, @"\beffect\b"},
-    {TokenType.Card, @"\bcard\b"},
-    {TokenType.EffectParam, @"\bEffect\b"},
+    { TokenType.Effect, @"\beffect\b"},
+    { TokenType.Card, @"\bcard\b"},
+    { TokenType.EffectParam, @"\bEffect\b"},
     { TokenType.Name, @"\bName\b" },
     { TokenType.Params, @"\bParams\b" },
     { TokenType.Action, @"\bAction\b" },
@@ -48,18 +48,23 @@ public class Lexer {
     { TokenType.Single, @"\bSingle\b" },
     { TokenType.Predicate, @"\bPredicate\b" },
     { TokenType.In, @"\bin\b" },
-    { TokenType.Hand, @"\bhand\b" },
-    { TokenType.Deck, @"\bdeck\b" },
-    { TokenType.Board, @"\bboard\b" },
-    { TokenType.Context, @"\bcontext\b" },
-    { TokenType.TriggerPlayer, @"\bTriggerPlayer\b" },
+    { TokenType.Hand, @"\bHand\b" },
+    { TokenType.Deck, @"\bDeck\b" },
+    { TokenType.Board, @"\bBoard\b" },
+    { TokenType.DeckOfPlayer, @"\bDeckOfPlayer\b" },
+    { TokenType.TriggerPlayer, @"\bTriggerPlayer\b" },        
+    { TokenType.GraveYardOfPlayer, @"\bGraveYardOfPlayer\b"},
+    { TokenType.HandOfPlayer, @"\bHandOfPlayer\b" },
     { TokenType.Find, @"\bFind\b" },
     { TokenType.Push, @"\bPush\b" },
+    { TokenType.Field, @"\bField\b" },
     { TokenType.SendBottom, @"\bSendBottom\b" },
     { TokenType.Pop, @"\bPop\b" },
+    { TokenType.Add, @"\bAdd\b" },
     { TokenType.Remove, @"\bRemove\b" },
     { TokenType.Shuffle, @"\bShuffle\b" },
     { TokenType.Owner, @"\bOwner\b" },
+
     { TokenType.NumberType, @"\bNumber\b" },
     { TokenType.StringType, @"\bString\b" },
 
@@ -78,8 +83,8 @@ public class Lexer {
 
     //Operators
     {TokenType.Pow, @"\^"},
-    { TokenType.PlusEqual, @"+=" },
-    { TokenType.MinusEqual, @"-=" },
+    { TokenType.PlusEqual, @"\+\=" },
+    { TokenType.MinusEqual, @"\-\=" },
     {TokenType.Increment, @"\+\+"},
     {TokenType.Decrement, @"\-\-"},
     {TokenType.Plus, @"\+"},
@@ -93,13 +98,13 @@ public class Lexer {
     {TokenType.More, ">"},
 
     //Symbols
-    {TokenType.SpaceConcatenation, "@@"},
-    {TokenType.Concatenation, "@"},
+    {TokenType.SpaceConcatenation, @"@@"},
+    {TokenType.Concatenation, @"@"},
     {TokenType.Assign, "="},
-    { TokenType.Colon, @":" },
-    { TokenType.Comma, @"," },        
-    { TokenType.Semicolon, @";" },
-    { TokenType.Arrow, @"=>" },
+    {TokenType.Colon, @":" },
+    {TokenType.Comma, @"," },        
+    {TokenType.Semicolon, @";" },
+    {TokenType.Arrow, @"=>" },
     {TokenType.LParen, @"\("},
     {TokenType.RParen, @"\)"},
     {TokenType.LBracket, @"\["},
@@ -108,9 +113,14 @@ public class Lexer {
     {TokenType.RCurly, @"\}"},
 
     //Identifiers
+    {TokenType.Point, @"\." },
     {TokenType.Int, @"\b\d+\b"},
     {TokenType.String, "\".*?\""},
-    {TokenType.Id, @"\b[A-Za-z_][A-Za-z_0-9]*\b"}
+    {TokenType.Id, @"\b[A-Za-z_][A-Za-z_0-9]*\b"},
+
+    //Comments
+    {TokenType.Comment, @"\/\/[^\n]*\n"},
+    {TokenType.Comments, @"/\*.*?\*/" },
 };
 
     public Lexer(string input) {
@@ -205,6 +215,7 @@ public enum TokenType {
     Comma,
     Semicolon,
     Not,
+    Point,
 
     //Keywords
     Effect,
@@ -228,17 +239,25 @@ public enum TokenType {
     Owner,
     Deck,
     Board,
-    Context,
     TriggerPlayer,
     Find,
     Push,
+    Field,
+    DeckOfPlayer,
+    GraveYardOfPlayer,
+    HandOfPlayer,
     SendBottom,
     Pop,
+    Add,
     Remove,
     Shuffle,
     NumberType,
     StringType,
     Arrow,
+
+    //Comments
+    Comment,
+    Comments,
 }
 
 

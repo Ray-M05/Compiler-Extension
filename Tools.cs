@@ -34,7 +34,8 @@ public static class Tools
             { TokenType.Multiply, 4 },
             { TokenType.Divide, 4 },
             { TokenType.Not, 4 },
-            { TokenType.Pow, 5 }
+            { TokenType.Pow, 5 },
+            { TokenType.Point, 6 }
         };
     }
 

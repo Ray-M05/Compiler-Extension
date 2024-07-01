@@ -10,7 +10,7 @@ public class Parser
 {
     private bool LookAhead(TokenType token, TokenType token1)
     {
-        return token== token1;
+        return tokene== token1;
     }
 
     public int position;
@@ -62,7 +62,7 @@ public class Parser
         if (LookAhead(tokens[position].Type, TokenType.LParen))
         {
             position++;
-            Expression expr = ParseExpression(); // Asumiendo que ParseNumericalExpression maneja correctamente las expresiones entre paréntesis
+            Expression expr = ParseExpression(); 
             if (!LookAhead(tokens[position].Type,TokenType.RParen))
             {
                 throw new Exception("Missing closing parenthesis");
@@ -72,21 +72,17 @@ public class Parser
         }
         else if (LookAhead(tokens[position].Type, TokenType.False)|| LookAhead(tokens[position].Type, TokenType.True))
         {
-            position++; // Avanzamos al siguiente token después del identificador
-            // Creamos una nueva expresión de identificador usando el token actual
+            position++;
             return new BooleanLiteral(tokens[position - 1]);
         }
-        // Comprueba si el siguiente token es un identificador
         else if (LookAhead(tokens[position].Type, TokenType.Id))
         {
-            position++; // Avanzamos al siguiente token después del identificador
-            // Creamos una nueva expresión de identificador usando el token actual
+            position++; 
             return new IdentifierExpression(tokens[position - 1]);
         }
         else if (LookAhead(tokens[position].Type, TokenType.String))
         {
-            position++; // Avanzamos al siguiente token después del identificador
-            // Creamos una nueva expresión de identificador usando el token actual
+            position++;
             return new StringExpression(tokens[position - 1]);
         }
         else if (LookAhead(tokens[position].Type, TokenType.Int))
@@ -96,7 +92,6 @@ public class Parser
         }
         else if (LookAhead(tokens[position].Type, TokenType.Not)||LookAhead(tokens[position].Type, TokenType.Plus)||LookAhead(tokens[position].Type, TokenType.Minus) && (position == 0 || !LookAhead(tokens[position - 1].Type, TokenType.Int) && !LookAhead(tokens[position - 1].Type, TokenType.Id)))
         {
-            // Lógica existente para manejar el caso de un operador unario
             TokenType unary = tokens[position].Type;
             position++;
             Expression operand = ParsePrimaryExpression();
@@ -109,7 +104,7 @@ public class Parser
     {
         Expression left= new IdentifierExpression(tokens[position++]);
         Token token= tokens[position++];
-        if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))//Agregar formas como incremento etc...
+        if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))
         {
             Expression right = ParseExpression();
             if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type, TokenType.Semicolon))
