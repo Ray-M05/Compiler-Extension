@@ -10,22 +10,61 @@ public class Parser
 {
     private bool LookAhead(TokenType token, TokenType token1)
     {
-        return tokene== token1;
+        return token == token1;
     }
 
     public int position;
     List<Token> tokens;
 
-    private Dictionary<TokenType, Func<Expression>> Options;
-    
+    private Dictionary< TokenType, Action<object> > Options;
+    private Dictionary<TokenType, Func<Expression>> CardParsing;
+    private Dictionary<TokenType, Func<Expression>> EffectParsing;
+
+
     private void InitializeTools()
     {
-        Options = new Dictionary<TokenType, Func<Expression>>
+        Options = new Dictionary<TokenType, Action<object>>
         {
-            { TokenType.Id, ParseAssignment },
-            { TokenType.Effect, ParseAssignment }
+            { TokenType.Card, CardTreatment},
+            { TokenType.Effect, EffectTreatment}
+        };
+
+        CardParsing = new Dictionary<TokenType, Func<Expression>>
+        {
+            { TokenType.Name,  },
+            { TokenType.Type,  },
+            { TokenType.Faction,  },
+            { TokenType.Power,  },
+            { TokenType.Range, },
+            { TokenType.OnActivation,  },
+            { TokenType.PostAction,  } // iria aqui?
+        };
+
+        EffectParsing = new Dictionary<TokenType, Func<Expression>>
+        {
+            { TokenType.Name,  },
+            { TokenType.Params,  },
+            { TokenType.Action,  }
         };
     }
+
+    private void CardTreatment(object program)
+    {
+        if(program is ProgramExpression p)
+        {
+            p.Cards.Add(ParseCard());
+        }
+    }
+    
+    private void EffectTreatment(object program)
+    {
+        if(program is ProgramExpression p)
+        {
+            p.Effects.Add(ParseEffect());
+        }
+    }
+
+    
     public Parser(List<Token> tokens)
     {
         position = 0;
@@ -148,14 +187,7 @@ public class Parser
             {
                 if(LookAhead(tokens[position++].Type, TokenType.LBracket))
                 {
-                    if(LookAhead(token.Type, TokenType.Effect))
-                    {
-                        general.Effects.Add(Options[token.Type].Invoke() as EffectInstance);
-                    }
-                    else if(token.Type== TokenType.Card)
-                    {
-                        general.Cards.Add(Options[token.Type].Invoke() as CardInstance);
-                    }
+                    Options[token.Type].Invoke(general);
                 }
                 else
                 throw new Exception($"Invalid token {tokens[position-1]}, expected Left Bracket");
