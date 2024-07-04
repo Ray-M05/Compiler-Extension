@@ -6,7 +6,7 @@
         {
             try
             {
-                string s = "a vt7tg \n || 23*5+64";
+                string s = "";
                 Lexer l = new Lexer(s);
                 List<Token> tokens = l.Tokenize();
                 foreach (Token t in tokens)
@@ -26,7 +26,7 @@
          static void PrintExpressionTree(Expression node, int indentLevel = 0)
         {
             node.Print(indentLevel);
-            if (node is BinaryOperator binaryNode)
+            if (node is BinaryExpression binaryNode)
             {
                 PrintExpressionTree(binaryNode.Left, indentLevel + 1);
                 PrintExpressionTree(binaryNode.Right, indentLevel + 1);

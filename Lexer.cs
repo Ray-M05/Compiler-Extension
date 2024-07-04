@@ -166,9 +166,6 @@ public class Lexer {
 }
 
 
-
-
-
 public enum TokenType {
 
     //Lines

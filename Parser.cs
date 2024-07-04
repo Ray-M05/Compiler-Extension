@@ -31,7 +31,7 @@ public class Parser
 
         CardParsing = new Dictionary<TokenType, Func<Expression>>
         {
-            { TokenType.Name,  },
+            { TokenType.Name, NameTreatment() },
             { TokenType.Type,  },
             { TokenType.Faction,  },
             { TokenType.Power,  },
@@ -42,7 +42,7 @@ public class Parser
 
         EffectParsing = new Dictionary<TokenType, Func<Expression>>
         {
-            { TokenType.Name,  },
+            { TokenType.Name,  NameTreatment()},
             { TokenType.Params,  },
             { TokenType.Action,  }
         };
@@ -91,7 +91,7 @@ public class Parser
             
             var operatortoken = tokens[position++].Type;
             var right = ParseExpression(precedence);
-            left = new BinaryOperator(left, right, operatortoken);
+            left = new BinaryExpression(left, right, operatortoken);
         }
         return left;
     }
@@ -134,7 +134,7 @@ public class Parser
             TokenType unary = tokens[position].Type;
             position++;
             Expression operand = ParsePrimaryExpression();
-            return new UnaryOperator(operand, unary);
+            return new AtomExpression(operand, unary);
         }
         throw new Exception("Not recognizable primary token");
     }
@@ -149,27 +149,27 @@ public class Parser
             if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type, TokenType.Semicolon))
             {
                 position++;
-                return new BinaryOperator(left, right,token.Type);
+                return new BinaryExpression(left, right,token.Type);
             }
             throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
         else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
         {
-            Expression right = new UnaryOperator(ParseExpression(), token.Type);
+            Expression right = new AtomExpression(ParseExpression(), token.Type);
             if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon))
             {
                 position++;
-                return new BinaryOperator(left, right,token.Type);
+                return new BinaryExpression(left, right,token.Type);
             }
             throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
         else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
         {
-            Expression right = new UnaryOperator(ParseExpression(), token.Type);
+            Expression right = new AtomExpression(ParseExpression(), token.Type);
             if(LookAhead(tokens[position].Type,TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon))
             {
                 position++;
-                return new BinaryOperator(left, right,token.Type);
+                return new BinaryExpression(left, right,token.Type);
             }
             throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
         }
@@ -199,5 +199,61 @@ public class Parser
     }
 
 
+private CardInstance ParseCard()
+    {
+        CardInstance card= new();
+        Token token = tokens[position];
+        while(position< tokens.Count)
+        {
+            if(LookAhead(token.Type, TokenType.Name)||LookAhead(token.Type, TokenType.Type)||
+               LookAhead(token.Type, TokenType.Effect)||LookAhead(token.Type, TokenType.Range)||
+               LookAhead(token.Type, TokenType.Faction)||LookAhead(token.Type, TokenType.Power)||
+               LookAhead(token.Type, TokenType.OnActivation)||LookAhead(token.Type, TokenType.PostAction))
+            {
+                CardParsing[tokens[position++].Type].Invoke();
+            }
+            else if(LookAhead(token.Type, TokenType.RCurly))
+            {
+                position++;
+                return card;
+            }
+            else
+            throw new Exception();
+        }
+        return card;
+    }
+
+private EffectInstance ParseEffect()
+{
+    EffectInstance effect= new();
+    Token token = tokens[position];
+    while(position< tokens.Count)
+    {
+        if(LookAhead(token.Type, TokenType.Name)||
+           LookAhead(token.Type, TokenType.Params)||
+           LookAhead(token.Type, TokenType.Action))
+        {
+            EffectParsing[tokens[position++].Type].Invoke();
+        }
+        else if(LookAhead(token.Type, TokenType.RCurly))
+        {
+            position++;
+            return effect;
+        }
+        else
+        throw new Exception();
+    }
+    return effect;
+}
+
+
+private void NameTreatment()
+{
+    // EffectInstance effect = new();
+    // if()
+    // {
+    //  effect.Name = ParseAssignment();   
+    // }
+}
 
 }

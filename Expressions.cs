@@ -24,13 +24,13 @@ public class ProgramExpression: Expression
     }
 }
 
-public class BinaryOperator : Expression
+public class BinaryExpression : Expression
 {
     public Expression Left { get; set; }
     public Expression Right { get; set; }
     public TokenType Operator { get; set; }
 
-    public BinaryOperator(Expression left, Expression right, TokenType Op)
+    public BinaryExpression(Expression left, Expression right, TokenType Op)
     {
         Left = left;
         Right = right;
@@ -93,12 +93,12 @@ public class Terminal: Expression
     }
 }
 
-public class UnaryOperator : Expression
+public class AtomExpression : Expression
 {
     public Expression Operand { get; set; }
     public TokenType Operator { get; set; }
 
-    public UnaryOperator(Expression operand, TokenType Operator)
+    public AtomExpression(Expression operand, TokenType Operator)
     {
         Operand = operand;
         this.Operator = Operator;
