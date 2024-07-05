@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Compiler;
@@ -15,10 +16,12 @@ public class Parser
 
     public int position;
     List<Token> tokens;
+    public bool ExpectingAssigment;
+    public bool ExpectingProp;
 
-    private Dictionary< TokenType, Action<object> > Options;
-    private Dictionary<TokenType, Func<Expression>> CardParsing;
-    private Dictionary<TokenType, Func<Expression>> EffectParsing;
+    private Dictionary< TokenType, Action<object>> Options;
+    private Dictionary<string, Action<CardInstance, PropertyInfo>> CardParsing;
+    private Dictionary<string, Action<EffectInstance, PropertyInfo>> EffectParsing;
 
 
     private void InitializeTools()
@@ -29,22 +32,22 @@ public class Parser
             { TokenType.Effect, EffectTreatment}
         };
 
-        CardParsing = new Dictionary<TokenType, Func<Expression>>
+        CardParsing = new Dictionary<string, Action<CardInstance, PropertyInfo>>
         {
-            { TokenType.Name, NameTreatment() },
-            { TokenType.Type,  },
-            { TokenType.Faction,  },
-            { TokenType.Power,  },
-            { TokenType.Range, },
-            { TokenType.OnActivation,  },
-            { TokenType.PostAction,  } // iria aqui?
+            { "Name",  AssignTreatment},
+            { "Type", AssignTreatment},
+            { "Faction", AssignTreatment },
+            { "Power", AssignTreatment },
+            { "Range",RangeTreatment },
+            { "OnActivation",  OnActivTreatment},
+           // { "PostAction",  AssignTreatment} // iria aqui?
         };
 
-        EffectParsing = new Dictionary<TokenType, Func<Expression>>
+        EffectParsing = new Dictionary<string, Action<EffectInstance, PropertyInfo>>
         {
-            { TokenType.Name,  NameTreatment()},
-            { TokenType.Params,  },
-            { TokenType.Action,  }
+            { "Name", AssignTreatment},
+            { "Params",  ParamsTreatment},
+            { "Action", ActionTreatment }
         };
     }
 
@@ -206,11 +209,14 @@ private CardInstance ParseCard()
         while(position< tokens.Count)
         {
             if(LookAhead(token.Type, TokenType.Name)||LookAhead(token.Type, TokenType.Type)||
-               LookAhead(token.Type, TokenType.Effect)||LookAhead(token.Type, TokenType.Range)||
-               LookAhead(token.Type, TokenType.Faction)||LookAhead(token.Type, TokenType.Power)||
-               LookAhead(token.Type, TokenType.OnActivation)||LookAhead(token.Type, TokenType.PostAction))
+               LookAhead(token.Type, TokenType.Range)||LookAhead(token.Type, TokenType.Power)||
+               LookAhead(token.Type, TokenType.Faction)||LookAhead(token.Type, TokenType.OnActivation))
             {
-                CardParsing[tokens[position++].Type].Invoke();
+                var instance = card.GetType();
+                var prop = instance.GetProperty(token.Meaning);
+                var pars = CardParsing[prop.Name];
+                pars.Invoke(card, prop);
+                token= tokens[position];
             }
             else if(LookAhead(token.Type, TokenType.RCurly))
             {
@@ -233,7 +239,11 @@ private EffectInstance ParseEffect()
            LookAhead(token.Type, TokenType.Params)||
            LookAhead(token.Type, TokenType.Action))
         {
-            EffectParsing[tokens[position++].Type].Invoke();
+            var instance = effect.GetType();
+            var prop = instance.GetProperty(token.Meaning);
+            var pars = EffectParsing[prop.Name];
+            pars.Invoke(effect, prop);
+            token= tokens[position];
         }
         else if(LookAhead(token.Type, TokenType.RCurly))
         {
@@ -247,13 +257,84 @@ private EffectInstance ParseEffect()
 }
 
 
-private void NameTreatment()
+private void AssignTreatment(CardInstance card, PropertyInfo p)
 {
-    // EffectInstance effect = new();
-    // if()
-    // {
-    //  effect.Name = ParseAssignment();   
-    // }
+    p.SetValue(card, ParseAssignment());
+}
+private void AssignTreatment (EffectInstance effect, PropertyInfo p)
+{
+    p.SetValue(effect, ParseAssignment());
 }
 
+private void RangeTreatment (CardInstance card, PropertyInfo p)
+{
+    p.SetValue(card, ParseRanges());
+}
+
+private void OnActivTreatment (CardInstance card, PropertyInfo p)
+{
+    p.SetValue(card, ParseOnActivation());
+}
+
+private void ParamsTreatment (EffectInstance effect, PropertyInfo p)
+{
+    p.SetValue(effect, ParseParams());
+}
+
+private void ActionTreatment (EffectInstance effect, PropertyInfo p)
+{
+    p.SetValue(effect, ParseAction());
+}
+
+public List<Expression> ParseRanges()
+    {
+        if(tokens[++position].Type== TokenType.Colon && tokens[++position].Type== TokenType.LBracket)
+        {
+            List<Expression> ranges = new();
+            position++;
+            while(position< tokens.Count)
+            {
+                if(tokens[position].Type== TokenType.String)
+                {
+                    ranges.Add(ParseExpression());
+                    if(tokens[position].Type== TokenType.Comma|| tokens[position].Type== TokenType.RBracket)
+                    {
+                        position++;
+                        if(tokens[position-1].Type== TokenType.RBracket)
+                        break;
+                    }
+                    else
+                        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected Comma");
+                }
+                else
+                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
+            }
+            return ranges;
+        }
+        else
+            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column ");
+    }
+
+
+// private OnActivationExpression ParseOnActivation()
+//     {
+//         OnActivationExpression activation = new();
+//         position++;
+//         if(tokens[position++].Type== TokenType.Colon && tokens[position++].Type== TokenType.LBracket)
+//         while(position< tokens.Count)
+//         {
+//             if(tokens[position].Type== TokenType.LCurly)
+//             {
+//                 activation.Effects.Add(ParseEffectAssignment());
+//             }
+//             else if(tokens[position].Type== TokenType.RBracket)
+//             {
+//                 position++;
+//                 break;
+//             }
+//             else
+//             throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
+//         }
+//         return activation;
+//     }
 }
