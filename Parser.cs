@@ -288,19 +288,21 @@ private void ActionTreatment (EffectInstance effect, PropertyInfo p)
 
 public List<Expression> ParseRanges()
     {
-        if(tokens[++position].Type== TokenType.Colon && tokens[++position].Type== TokenType.LBracket)
+        if(LookAhead(tokens[++position].Type, TokenType.Colon) &&
+           LookAhead(tokens[++position].Type, TokenType.LBracket))
         {
             List<Expression> ranges = new();
             position++;
             while(position< tokens.Count)
             {
-                if(tokens[position].Type== TokenType.String)
+                if(LookAhead(tokens[position].Type, TokenType.String))
                 {
                     ranges.Add(ParseExpression());
-                    if(tokens[position].Type== TokenType.Comma|| tokens[position].Type== TokenType.RBracket)
+                    if(LookAhead(tokens[position].Type, TokenType.Comma)||
+                       LookAhead(tokens[position].Type, TokenType.RBracket))
                     {
                         position++;
-                        if(tokens[position-1].Type== TokenType.RBracket)
+                        if(LookAhead(tokens[position-1].Type, TokenType.RBracket))
                         break;
                     }
                     else
@@ -316,25 +318,273 @@ public List<Expression> ParseRanges()
     }
 
 
-// private OnActivationExpression ParseOnActivation()
-//     {
-//         OnActivationExpression activation = new();
-//         position++;
-//         if(tokens[position++].Type== TokenType.Colon && tokens[position++].Type== TokenType.LBracket)
-//         while(position< tokens.Count)
-//         {
-//             if(tokens[position].Type== TokenType.LCurly)
-//             {
-//                 activation.Effects.Add(ParseEffectAssignment());
-//             }
-//             else if(tokens[position].Type== TokenType.RBracket)
-//             {
-//                 position++;
-//                 break;
-//             }
-//             else
-//             throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
-//         }
-//         return activation;
-//     }
+private OnActivation ParseOnActivation()
+    {
+        OnActivation activation = new();
+        position++;
+        if(LookAhead(tokens[position++].Type, TokenType.Colon) &&
+           LookAhead(tokens[position++].Type, TokenType.LBracket))
+        while(position< tokens.Count)
+        {
+            if(LookAhead(tokens[position].Type, TokenType.LCurly))
+            {
+                activation.Effects.Add(ParseEffectParam());
+            }
+            else if(LookAhead(tokens[position].Type, TokenType.RBracket))
+            {
+                position++;
+                break;
+            }
+            else
+            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
+        }
+        return activation;
+    }
+
+
+    private List<Expression> ParseParams(bool eff=true)
+    {//false means a real parameter statement, true is used also on Selector and other similar statements
+        List<Expression> parameters = new();
+        Token token = tokens[++position];
+        if(LookAhead(tokens[position++].Type, TokenType.Colon)&&
+           LookAhead(tokens[position++].Type, TokenType.LCurly))
+        while(true)
+        {
+            token= tokens[position];
+            if(LookAhead(token.Type,TokenType.Id))
+            {
+                //parameters.Add(ParseAssignment(eff));
+                token = tokens[position];
+            }
+            else if(LookAhead(token.Type,TokenType.Name)&& eff)
+            {
+                //parameters.Add(ParseAssignment(eff));
+            }
+            else if(LookAhead(tokens[position++].Type, TokenType.RCurly))
+            {
+                if(LookAhead(tokens[position++].Type, TokenType.Semicolon)||
+                   LookAhead(tokens[position-1].Type, TokenType.Comma))
+                break;
+            }
+            else
+            throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in Params definition");
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in ");
+        return parameters;
+    }
+
+    private Action ParseAction()
+    {
+        Action Action = new();
+        position++;
+        if(LookAhead(tokens[position++].Type, TokenType.Colon) )
+        {//Action initial sintaxis
+            if(LookAhead(tokens[position++].Type, TokenType.LParen) &&
+               LookAhead(tokens[position++].Type, TokenType.Id))
+                Action.Targets= new IdentifierExpression(tokens[position-1]);
+
+                if(LookAhead(tokens[position++].Type, TokenType.Comma) &&
+                   LookAhead(tokens[position++].Type, TokenType.Id))
+                Action.Context = new IdentifierExpression(tokens[position-1]);
+
+                if(LookAhead(tokens[position++].Type, TokenType.RParen) &&
+                   LookAhead(tokens[position++].Type, TokenType.Arrow) &&
+                   LookAhead(tokens[position++].Type, TokenType.LCurly))
+                {
+                    Action.Instructions= ParseInstructionBlock();
+                }
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on an Action declaration statement");
+        return Action;
+    }
+
+     private EffectParam ParseEffectParam()
+    {
+        EffectParam effect= new();
+        if(LookAhead(tokens[position++].Type, TokenType.LCurly))
+        while(position< tokens.Count)
+        {
+            switch (tokens[position].Type)
+            {
+                case TokenType.EffectParam:
+                    if(LookAhead(tokens[position+2].Type, TokenType.LCurly))
+                        effect.Effect = ParseParams();
+                    // else
+                    //     effect.Effect.Add(ParseAssignment(true));
+                    break;
+                case TokenType.Selector:
+                    effect.Selector= ParseSelector();
+                    break;
+                case TokenType.PostAction:
+                    position++;
+                    if(LookAhead(tokens[position++].Type, TokenType.Colon))
+                    effect.PostAction = ParseEffectParam();// Manejo para TokenType.RANGE
+                    else
+                    throw new Exception($"Invalid Token at {tokens[position-1].PositionError.Row} row and {tokens[position-1].PositionError.Column} column expected Colon in PostAction statement");
+                    break;
+                case TokenType.RCurly:
+                    if(LookAhead(tokens[++position].Type,TokenType.Comma)|| 
+                       LookAhead(tokens[position].Type,TokenType.Semicolon)||
+                       LookAhead(tokens[position].Type,TokenType.RCurly))
+                    {
+                        if(!LookAhead(tokens[position].Type,TokenType.RCurly))
+                        position++;
+                    }
+                    return effect;
+                default:
+                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected card item");
+            }
+        }
+        return effect;
+    }
+
+
+    private InstructionBlock ParseInstructionBlock(bool single= false)
+    {//No debuggeado problemas a la hora de parsear Id, diferenciacion entre parseo de asignacion y uso de id para llamar un metodo o usar una propiedad
+        InstructionBlock block = new();
+        do
+        {
+            if(tokens[position].Type==TokenType.Id)
+            {
+                ///block.Instructions.Add(ParseAssignment(true, false));
+            }
+            else if(tokens[position].Type==TokenType.For)
+            {
+                block.Instructions.Add(ParseFor());
+            }
+            else if(tokens[position].Type==TokenType.While)
+            {
+                block.Instructions.Add(ParseWhile());
+            }
+            else if(tokens[position++].Type== TokenType.RCurly)
+            {
+                break;
+            }
+            else
+            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in Instruction Block definition");
+        }while(true && !single);
+        return block;
+    }
+
+    private Selector ParseSelector()
+    {
+        Selector selector= new();
+        position++;
+        if(tokens[position++].Type== TokenType.Semicolon&& tokens[position++].Type== TokenType.LCurly)
+        while(position< tokens.Count)
+        {
+            switch (tokens[position].Type)
+            {
+                case TokenType.Source:
+                    //selector.Source = ParseAssignment(true);//No Implementado
+                    break;
+                case TokenType.Single:
+                   // selector.Single= ParseAssignment(true);
+                    break;
+                case TokenType.Predicate:
+                    selector.Predicate = ParsePredicate();
+                    break;
+                case TokenType.RCurly:
+                    if(tokens[++position].Type==TokenType.Comma|| tokens[position].Type==TokenType.Semicolon)
+                    {
+                        position++;
+                        return selector;
+                    }
+                    else
+                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
+                default:
+                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected selector item");
+            }
+        }
+        return selector;
+    }
+
+    public Predicate ParsePredicate()
+    {
+        if(tokens[++position].Type== TokenType.Semicolon)
+        {
+            Predicate predicate= new();
+            if(tokens[++position].Type== TokenType.LParen && tokens[++position].Type== TokenType.Id)
+                predicate.Unit= new IdentifierExpression(tokens[position]);
+                if(tokens[++position].Type== TokenType.RParen && tokens[++position].Type== TokenType.Arrow)
+                {
+                    position++;
+                    predicate.Condition= ParseExpression();
+                    if(tokens[position].Type== TokenType.Comma|| tokens[position].Type== TokenType.RCurly)
+                    {
+                        if(tokens[position].Type== TokenType.Comma)
+                        position++;
+                        return predicate;
+                    }
+                    else
+                        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected Comma");
+                }
+                else
+                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
+        
+        }
+        else
+            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column ");
+    }
+
+
+    private ForExpression ParseFor()
+    {//No debbugeado
+        ForExpression ForExp = new();
+        position++;
+        if( tokens[position++].Type== TokenType.Id )
+        {//ForExp initial sintaxis
+            ForExp.Variable = new IdentifierExpression(tokens[position-1]);
+            if(tokens[position++].Type == TokenType.In && tokens[position++].Type== TokenType.Id)
+            {
+                ForExp.Collection= new IdentifierExpression(tokens[position-1]);
+                if(tokens[position++].Type== TokenType.LCurly)
+                {
+                    ForExp.Instructions=ParseInstructionBlock();
+                    if(tokens[position].Type== TokenType.Comma||tokens[position].Type== TokenType.Semicolon)
+                    {
+                        position++;
+                    }
+                }
+                else
+                {
+                    position--;
+                    ForExp.Instructions= ParseInstructionBlock(true);
+                }
+            }
+            else
+            {
+                throw new Exception($"{position} Invalid Token at {tokens[position-1].PositionError.Row} row and {tokens[position-1].PositionError.Column} column expected in ");
+            }
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on a For declaration statement");
+        return ForExp;
+    }
+    private WhileExpression ParseWhile()
+    {//No debbugeado
+        WhileExpression WhileExp = new();
+        position++;
+        if( tokens[position++].Type== TokenType.LParen)
+        {//WhileExp initial sintaxis
+            WhileExp.Condition = ParseExpression();
+            if(tokens[position++].Type == TokenType.RParen)
+            {
+                if(tokens[position++].Type== TokenType.LCurly)
+                {
+                    WhileExp.Instructions=ParseInstructionBlock();
+                }
+                else{
+                    position--;
+                    WhileExp.Instructions= ParseInstructionBlock(true);
+                }
+                    
+            }
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on an Action declaration statement");
+        return WhileExp;
+    }
 }
