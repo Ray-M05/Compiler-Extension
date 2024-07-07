@@ -77,9 +77,18 @@ public class Parser
     }
     public Expression Parse()
     {
-        Expression expression;
-        expression = ParseGeneral();
-        return expression;
+        try
+        {
+            Expression expression;
+            expression = ParseGeneral();
+            return expression;
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine("Roto en: " + position);
+            Console.WriteLine(e);
+        }
+        return null;
     }
 
     public Expression ParseExpression(int parentprecedence =0)
@@ -154,6 +163,33 @@ public class Parser
             Expression operand = ParsePrimaryExpression();
             return new AtomExpression(operand, unary);
         }
+
+        else if (tokens[position].Type == TokenType.Shuffle||tokens[position].Type == TokenType.Pop)
+        {//Functions without parameters
+            Token token= tokens[position];
+            if(tokens[++position].Type== TokenType.LParen && tokens[++position].Type== TokenType.RParen)
+            {
+                position++;
+                return new AtomExpression(null, token.Type);
+            }
+        }
+        else if (tokens[position].Type == TokenType.Push ||
+                tokens[position].Type == TokenType.SendBottom||tokens[position].Type == TokenType.Remove
+                ||tokens[position].Type == TokenType.HandOfPlayer||tokens[position].Type == TokenType.DeckOfPlayer
+                ||tokens[position].Type == TokenType.FieldOfPlayer||tokens[position].Type == TokenType.GraveYardOfPlayer
+                ||tokens[position].Type == TokenType.Add)
+                {//Functions with parameters
+                    Token token= tokens[position];
+                    if(tokens[++position].Type== TokenType.LParen)
+                    {
+                        position++;
+                        Expression argument = ParseExpression();
+                        if(tokens[position++].Type== TokenType.RParen)
+                        {
+                            return new AtomExpression(argument, token.Type);
+                        }
+                    }
+                }
         throw new Exception("Not recognizable primary token");
     }
 
@@ -165,7 +201,7 @@ public class Parser
         Expression right=null;
         Expression Binary= null;
 
-            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)
+            if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)
             {
                 position++;
                 right = ParseExpression();
@@ -205,29 +241,26 @@ public class Parser
         Token token= tokens[position];
         Expression right=null;
         Expression Binary= null;
-        
-
-            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)//Agregar formas como incremento etc...
+        if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)//Agregar formas como incremento etc...
+        {
+            position++;
+            if(tokens[position].Type==TokenType.NumberType || tokens[position].Type==TokenType.StringType)
             {
+                right = new IdentifierExpression(tokens[position]);
                 position++;
-                if(tokens[position].Type==TokenType.NumberType || tokens[position].Type==TokenType.StringType)
+                Binary= new BinaryExpression(left, right,token.Type);
+                if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon
+                ||tokens[position].Type==TokenType.RCurly)
                 {
-                    right = new IdentifierExpression(tokens[position]);
-                    position++;
-                    Binary= new BinaryExpression(left, right,token.Type);
+                    if(tokens[position].Type!=TokenType.RCurly)
+                        position++;
+                    if(Binary!= null)
+                        return Binary;
+                    else
+                        throw new Exception();
                 }
             }
-        
-        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
-        {
-            if(tokens[position].Type!=TokenType.RCurly)
-                position++;
-            if(Binary!= null)
-                return Binary;
-            else
-                throw new Exception();
         }
-        else
         throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
     }
 
@@ -239,7 +272,7 @@ public class Parser
         Expression right=null;
         Expression Binary= null;
 
-            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)
+            if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)
             {
                 position++;
                 right = ParseExpression();
@@ -280,12 +313,15 @@ public class Parser
         {
             if(LookAhead(token.Type, TokenType.Effect) || LookAhead(token.Type, TokenType.Card))
             {
-                if(LookAhead(tokens[position++].Type, TokenType.LBracket))
+                if(LookAhead(tokens[++position].Type, TokenType.LCurly))
                 {
+                    position++;
                     Options[token.Type].Invoke(general);
+                    if(position< tokens.Count)
+                    token = tokens[position];
                 }
                 else
-                throw new Exception($"Invalid token {tokens[position-1]}, expected Left Bracket");
+                throw new Exception($"Invalid token {tokens[position-1]}, expected Left Curly");
             }
             else
             throw new Exception("Invalid program structure, only expects cards or effects");
@@ -395,7 +431,21 @@ public List<Expression> ParseRanges()
                     {
                         position++;
                         if(LookAhead(tokens[position-1].Type, TokenType.RBracket))
-                        break;
+                        {
+                            if(LookAhead(tokens[position].Type, TokenType.Comma)|| LookAhead(tokens[position].Type, TokenType.Semicolon)
+                            ||LookAhead(tokens[position].Type, TokenType.RCurly))
+                            {
+                                if(!LookAhead(tokens[position].Type, TokenType.RCurly))
+                                {
+                                    position++;
+                                }
+                                break;
+                            }
+                            else
+                                throw new Exception("Unexpected token");
+                            
+                        }
+                        
                     }
                     else
                         throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected Comma");
@@ -445,7 +495,7 @@ private OnActivation ParseOnActivation()
             token= tokens[position];
             if(LookAhead(token.Type,TokenType.Id))
             {
-                parameters.Add(ParsePropertyAssignment());
+                parameters.Add(ParseParamAssigment());
                 token = tokens[position];
             }
             
@@ -463,7 +513,7 @@ private OnActivation ParseOnActivation()
         return parameters;
     }
 
-        private List<Expression> ParseEffParams()
+    private List<Expression> ParseEffParams()
     {
         List<Expression> parameters = new();
         Token token = tokens[++position];
@@ -481,11 +531,13 @@ private OnActivation ParseOnActivation()
             {
                 parameters.Add(ParsePropertyAssignment());
             }
-            else if(LookAhead(tokens[position++].Type, TokenType.RCurly))
+            else if(LookAhead(tokens[position].Type, TokenType.RCurly))
             {
-                if(LookAhead(tokens[position++].Type, TokenType.Semicolon)||
-                   LookAhead(tokens[position-1].Type, TokenType.Comma))
-                break;
+                if(LookAhead(tokens[++position].Type, TokenType.Semicolon)||
+                   LookAhead(tokens[position].Type, TokenType.Comma)){
+                        position++;
+                        break;
+                   }
             }
             else
             throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in Params definition");
@@ -579,8 +631,9 @@ private OnActivation ParseOnActivation()
             {
                 block.Instructions.Add(ParseWhile());
             }
-            else if(tokens[position++].Type== TokenType.RCurly)
+            else if(tokens[position].Type== TokenType.RCurly)
             {
+                position++;
                 break;
             }
             else
@@ -593,7 +646,7 @@ private OnActivation ParseOnActivation()
     {
         Selector selector= new();
         position++;
-        if(tokens[position++].Type== TokenType.Semicolon&& tokens[position++].Type== TokenType.LCurly)
+        if(tokens[position++].Type== TokenType.Colon && tokens[position++].Type== TokenType.LCurly)
         while(position< tokens.Count)
         {
             switch (tokens[position].Type)
@@ -624,7 +677,7 @@ private OnActivation ParseOnActivation()
 
     public Predicate ParsePredicate()
     {
-        if(tokens[++position].Type== TokenType.Semicolon)
+        if(tokens[++position].Type== TokenType.Colon)
         {
             Predicate predicate= new();
             if(tokens[++position].Type== TokenType.LParen && tokens[++position].Type== TokenType.Id)

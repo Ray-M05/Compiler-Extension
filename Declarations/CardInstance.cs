@@ -1,12 +1,12 @@
 namespace Compiler;
 public class CardInstance: Expression
 {
-    public Expression? Name;
-    public Expression? Type;
-    public Expression? Faction;
-    public Expression? Power;
-    public List<Expression>? Range;
-    public OnActivation? OnActivation;
+    public Expression? Name {get; set;}
+    public Expression? Type {get; set;}
+    public Expression? Faction {get; set;}
+    public Expression? Power {get; set;}
+    public List<Expression>? Range {get; set;}
+    public OnActivation? OnActivation {get; set;}
 
     public override object Evaluate()
     {
