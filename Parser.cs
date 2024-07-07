@@ -40,7 +40,7 @@ public class Parser
             { "Power", AssignTreatment },
             { "Range",RangeTreatment },
             { "OnActivation",  OnActivTreatment},
-           // { "PostAction",  AssignTreatment} // iria aqui?
+           // { "PostAction",  AssignTreatment} 
         };
 
         EffectParsing = new Dictionary<string, Action<EffectInstance, PropertyInfo>>
@@ -88,8 +88,12 @@ public class Parser
 
         while (position < tokens.Count)
         {
-            var precedence = Tools.MagicNumbers[tokens[position].Type];
-            if(precedence==0|| precedence<= parentprecedence) 
+            int precedence;
+            if(Tools.MagicNumbers.ContainsKey(tokens[position].Type))
+            precedence = Tools.MagicNumbers[tokens[position].Type];
+            else
+            precedence = 0;
+            if(precedence==0|| precedence<= parentprecedence)
             break;
             
             var operatortoken = tokens[position++].Type;
@@ -117,6 +121,17 @@ public class Parser
             position++;
             return new BooleanLiteral(tokens[position - 1]);
         }
+        else if (LookAhead(tokens[position].Type, TokenType.Name) || LookAhead(tokens[position].Type, TokenType.Type)||
+                 LookAhead(tokens[position].Type, TokenType.Faction) ||LookAhead(tokens[position].Type, TokenType.Power)||
+                 LookAhead(tokens[position].Type, TokenType.EffectParam) || LookAhead(tokens[position].Type, TokenType.Source)||
+                 LookAhead(tokens[position].Type, TokenType.Single)||LookAhead(tokens[position].Type, TokenType.Owner)||
+                 LookAhead(tokens[position].Type, TokenType.Deck)||LookAhead(tokens[position].Type, TokenType.GraveYard)||
+                 LookAhead(tokens[position].Type, TokenType.Field)||LookAhead(tokens[position].Type, TokenType.Board)||
+                 LookAhead(tokens[position].Type, TokenType.Hand))
+        {
+            position++; 
+            return new IdentifierExpression(tokens[position - 1]);
+        }
         else if (LookAhead(tokens[position].Type, TokenType.Id))
         {
             position++; 
@@ -142,42 +157,119 @@ public class Parser
         throw new Exception("Not recognizable primary token");
     }
 
-    private Expression ParseAssignment()
-    {
-        Expression left= new IdentifierExpression(tokens[position++]);
-        Token token= tokens[position++];
-        if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))
-        {
-            Expression right = ParseExpression();
-            if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type, TokenType.Semicolon))
+    private Expression ParsePropertyAssignment()
+    {//true means it expects value, false means it expects ValueType
+        Expression left;
+        left= ParsePrimaryExpression();
+        Token token= tokens[position];
+        Expression right=null;
+        Expression Binary= null;
+
+            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)
             {
                 position++;
-                return new BinaryExpression(left, right,token.Type);
-            }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
-        }
-        else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
-        {
-            Expression right = new AtomExpression(ParseExpression(), token.Type);
-            if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon))
+                right = ParseExpression();
+                Binary= new BinaryExpression(left, right,token.Type);
+            }//NADA DE ESTO ESTÁ HECHO
+            else if(token.Type == TokenType.Increment|| token.Type == TokenType.Decrement)
             {
                 position++;
-                return new BinaryExpression(left, right,token.Type);
+                right = new AtomExpression(ParseExpression(), token.Type);
+                Binary= new BinaryExpression(left, right,token.Type);
             }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
-        }
-        else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
-        {
-            Expression right = new AtomExpression(ParseExpression(), token.Type);
-            if(LookAhead(tokens[position].Type,TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon))
+            else if(token.Type == TokenType.PlusEqual|| token.Type == TokenType.MinusEqual)
             {
                 position++;
-                return new BinaryExpression(left, right,token.Type);
+                right = new AtomExpression(ParseExpression(), token.Type);
+                Binary= new BinaryExpression(left, right,token.Type);
             }
-            throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+        
+        
+        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
+        {
+            if(tokens[position].Type!=TokenType.RCurly)
+                position++;
+            if(Binary!= null)
+                return Binary;
+            else
+                throw new Exception();
         }
         else
-        throw new Exception($"Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type})");
+        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+    }
+
+    private Expression ParseParamAssigment()
+    {
+        Expression left;
+        left= ParsePrimaryExpression();
+        Token token= tokens[position];
+        Expression right=null;
+        Expression Binary= null;
+        
+
+            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)//Agregar formas como incremento etc...
+            {
+                position++;
+                if(tokens[position].Type==TokenType.NumberType || tokens[position].Type==TokenType.StringType)
+                {
+                    right = new IdentifierExpression(tokens[position]);
+                    position++;
+                    Binary= new BinaryExpression(left, right,token.Type);
+                }
+            }
+        
+        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
+        {
+            if(tokens[position].Type!=TokenType.RCurly)
+                position++;
+            if(Binary!= null)
+                return Binary;
+            else
+                throw new Exception();
+        }
+        else
+        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+    }
+
+    private Expression ParseInstructionAssigment()
+    {
+        Expression left;
+        left = ParseExpression();
+        Token token= tokens[position];
+        Expression right=null;
+        Expression Binary= null;
+
+            if (token.Type == TokenType.Assign|| token.Type == TokenType.Semicolon)
+            {
+                position++;
+                right = ParseExpression();
+                Binary= new BinaryExpression(left, right,token.Type);
+            }//NADA DE ESTO ESTÁ HECHO
+            else if(token.Type == TokenType.Increment|| token.Type == TokenType.Decrement)
+            {
+                position++;
+                right = new AtomExpression(ParseExpression(), token.Type);
+                Binary= new BinaryExpression(left, right,token.Type);
+            }
+            else if(token.Type == TokenType.PlusEqual|| token.Type == TokenType.MinusEqual)
+            {
+                position++;
+                right = new AtomExpression(ParseExpression(), token.Type);
+                Binary= new BinaryExpression(left, right,token.Type);
+            }
+        
+        
+        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
+        {
+            if(tokens[position].Type!=TokenType.RCurly)
+                position++;
+            if(Binary!= null)
+                return Binary;
+            else
+                return left;
+        }
+        else
+        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
     }
     
     private Expression ParseGeneral()
@@ -259,11 +351,11 @@ private EffectInstance ParseEffect()
 
 private void AssignTreatment(CardInstance card, PropertyInfo p)
 {
-    p.SetValue(card, ParseAssignment());
+    p.SetValue(card, ParsePropertyAssignment());
 }
 private void AssignTreatment (EffectInstance effect, PropertyInfo p)
 {
-    p.SetValue(effect, ParseAssignment());
+    p.SetValue(effect, ParsePropertyAssignment());
 }
 
 private void RangeTreatment (CardInstance card, PropertyInfo p)
@@ -342,8 +434,8 @@ private OnActivation ParseOnActivation()
     }
 
 
-    private List<Expression> ParseParams(bool eff=true)
-    {//false means a real parameter statement, true is used also on Selector and other similar statements
+    private List<Expression> ParseParams()
+    {
         List<Expression> parameters = new();
         Token token = tokens[++position];
         if(LookAhead(tokens[position++].Type, TokenType.Colon)&&
@@ -353,12 +445,41 @@ private OnActivation ParseOnActivation()
             token= tokens[position];
             if(LookAhead(token.Type,TokenType.Id))
             {
-                //parameters.Add(ParseAssignment(eff));
+                parameters.Add(ParsePropertyAssignment());
                 token = tokens[position];
             }
-            else if(LookAhead(token.Type,TokenType.Name)&& eff)
+            
+            else if(LookAhead(tokens[position++].Type, TokenType.RCurly))
             {
-                //parameters.Add(ParseAssignment(eff));
+                if(LookAhead(tokens[position++].Type, TokenType.Semicolon)||
+                   LookAhead(tokens[position-1].Type, TokenType.Comma))
+                break;
+            }
+            else
+            throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in Params definition");
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in ");
+        return parameters;
+    }
+
+        private List<Expression> ParseEffParams()
+    {
+        List<Expression> parameters = new();
+        Token token = tokens[++position];
+        if(LookAhead(tokens[position++].Type, TokenType.Colon)&&
+           LookAhead(tokens[position++].Type, TokenType.LCurly))
+        while(true)
+        {
+            token= tokens[position];
+            if(LookAhead(token.Type,TokenType.Id))
+            {
+                parameters.Add(ParsePropertyAssignment());
+                token = tokens[position];
+            }
+            else if(LookAhead(token.Type,TokenType.Name))
+            {
+                parameters.Add(ParsePropertyAssignment());
             }
             else if(LookAhead(tokens[position++].Type, TokenType.RCurly))
             {
@@ -410,9 +531,9 @@ private OnActivation ParseOnActivation()
             {
                 case TokenType.EffectParam:
                     if(LookAhead(tokens[position+2].Type, TokenType.LCurly))
-                        effect.Effect = ParseParams();
-                    // else
-                    //     effect.Effect.Add(ParseAssignment(true));
+                        effect.Effect = ParseEffParams();
+                    else
+                        effect.Effect.Add(ParsePropertyAssignment());
                     break;
                 case TokenType.Selector:
                     effect.Selector= ParseSelector();
@@ -448,7 +569,7 @@ private OnActivation ParseOnActivation()
         {
             if(tokens[position].Type==TokenType.Id)
             {
-                ///block.Instructions.Add(ParseAssignment(true, false));
+                block.Instructions.Add(ParseInstructionAssigment());
             }
             else if(tokens[position].Type==TokenType.For)
             {
@@ -478,10 +599,10 @@ private OnActivation ParseOnActivation()
             switch (tokens[position].Type)
             {
                 case TokenType.Source:
-                    //selector.Source = ParseAssignment(true);//No Implementado
+                    selector.Source = ParsePropertyAssignment();
                     break;
                 case TokenType.Single:
-                   // selector.Single= ParseAssignment(true);
+                    selector.Single= ParsePropertyAssignment();
                     break;
                 case TokenType.Predicate:
                     selector.Predicate = ParsePredicate();
@@ -531,7 +652,7 @@ private OnActivation ParseOnActivation()
 
 
     private ForExpression ParseFor()
-    {//No debbugeado
+    {
         ForExpression ForExp = new();
         position++;
         if( tokens[position++].Type== TokenType.Id )
@@ -564,7 +685,7 @@ private OnActivation ParseOnActivation()
         return ForExp;
     }
     private WhileExpression ParseWhile()
-    {//No debbugeado
+    {
         WhileExpression WhileExp = new();
         position++;
         if( tokens[position++].Type== TokenType.LParen)
