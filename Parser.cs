@@ -164,27 +164,26 @@ public class Parser
             return new AtomExpression(operand, unary);
         }
 
-        else if (tokens[position].Type == TokenType.Shuffle||tokens[position].Type == TokenType.Pop)
-        {//Functions without parameters
+        else if (LookAhead(tokens[position].Type, TokenType.Shuffle)||LookAhead(tokens[position].Type, TokenType.Pop))
+        {
             Token token= tokens[position];
-            if(tokens[++position].Type== TokenType.LParen && tokens[++position].Type== TokenType.RParen)
+            if(LookAhead(tokens[++position].Type, TokenType.LParen) && LookAhead(tokens[++position].Type, TokenType.RParen))
             {
                 position++;
                 return new AtomExpression(null, token.Type);
             }
         }
-        else if (tokens[position].Type == TokenType.Push ||
-                tokens[position].Type == TokenType.SendBottom||tokens[position].Type == TokenType.Remove
-                ||tokens[position].Type == TokenType.HandOfPlayer||tokens[position].Type == TokenType.DeckOfPlayer
-                ||tokens[position].Type == TokenType.FieldOfPlayer||tokens[position].Type == TokenType.GraveYardOfPlayer
-                ||tokens[position].Type == TokenType.Add)
-                {//Functions with parameters
+        else if (LookAhead(tokens[position].Type, TokenType.Push) ||LookAhead(tokens[position].Type, TokenType.SendBottom)
+                ||LookAhead(tokens[position].Type, TokenType.Remove)||LookAhead(tokens[position].Type, TokenType.HandOfPlayer)
+                ||LookAhead(tokens[position].Type, TokenType.DeckOfPlayer)||LookAhead(tokens[position].Type, TokenType.Add)
+                ||LookAhead(tokens[position].Type, TokenType.FieldOfPlayer)||LookAhead(tokens[position].Type, TokenType.GraveYardOfPlayer))
+                {
                     Token token= tokens[position];
-                    if(tokens[++position].Type== TokenType.LParen)
+                    if(LookAhead(tokens[++position].Type, TokenType.LParen))
                     {
                         position++;
                         Expression argument = ParseExpression();
-                        if(tokens[position++].Type== TokenType.RParen)
+                        if(LookAhead(tokens[position++].Type, TokenType.RParen))
                         {
                             return new AtomExpression(argument, token.Type);
                         }
@@ -194,26 +193,26 @@ public class Parser
     }
 
     private Expression ParsePropertyAssignment()
-    {//true means it expects value, false means it expects ValueType
+    {
         Expression left;
         left= ParsePrimaryExpression();
         Token token= tokens[position];
         Expression right=null;
         Expression Binary= null;
 
-            if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)
+            if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))
             {
                 position++;
                 right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
-            }//NADA DE ESTO ESTÁ HECHO
-            else if(token.Type == TokenType.Increment|| token.Type == TokenType.Decrement)
+            }
+            else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
                 right = new AtomExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
-            else if(token.Type == TokenType.PlusEqual|| token.Type == TokenType.MinusEqual)
+            else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
                 right = new AtomExpression(ParseExpression(), token.Type);
@@ -221,9 +220,9 @@ public class Parser
             }
         
         
-        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
+        if(LookAhead(tokens[position].Type, TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon)||LookAhead(tokens[position].Type,TokenType.RCurly))
         {
-            if(tokens[position].Type!=TokenType.RCurly)
+            if(!LookAhead(tokens[position].Type,TokenType.RCurly))
                 position++;
             if(Binary!= null)
                 return Binary;
@@ -241,18 +240,18 @@ public class Parser
         Token token= tokens[position];
         Expression right=null;
         Expression Binary= null;
-        if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)//Agregar formas como incremento etc...
+        if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))//Agregar formas como incremento etc...
         {
             position++;
-            if(tokens[position].Type==TokenType.NumberType || tokens[position].Type==TokenType.StringType)
+            if(LookAhead(tokens[position].Type,TokenType.NumberType) || LookAhead(tokens[position].Type,TokenType.StringType))
             {
                 right = new IdentifierExpression(tokens[position]);
                 position++;
                 Binary= new BinaryExpression(left, right,token.Type);
-                if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon
-                ||tokens[position].Type==TokenType.RCurly)
+                if(LookAhead(tokens[position].Type,TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon)
+                ||LookAhead(tokens[position].Type,TokenType.RCurly))
                 {
-                    if(tokens[position].Type!=TokenType.RCurly)
+                    if(!LookAhead(tokens[position].Type,TokenType.RCurly))
                         position++;
                     if(Binary!= null)
                         return Binary;
@@ -272,19 +271,19 @@ public class Parser
         Expression right=null;
         Expression Binary= null;
 
-            if (token.Type == TokenType.Assign|| token.Type == TokenType.Colon)
+            if (LookAhead(token.Type, TokenType.Assign)|| LookAhead(token.Type, TokenType.Colon))
             {
                 position++;
                 right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
             }//NADA DE ESTO ESTÁ HECHO
-            else if(token.Type == TokenType.Increment|| token.Type == TokenType.Decrement)
+            else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
                 right = new AtomExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
-            else if(token.Type == TokenType.PlusEqual|| token.Type == TokenType.MinusEqual)
+            else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
                 right = new AtomExpression(ParseExpression(), token.Type);
@@ -292,9 +291,9 @@ public class Parser
             }
         
         
-        if(tokens[position].Type==TokenType.Comma || tokens[position].Type==TokenType.Semicolon||tokens[position].Type==TokenType.RCurly)
+        if(LookAhead(tokens[position].Type,TokenType.Comma) || LookAhead(tokens[position].Type,TokenType.Semicolon)||LookAhead(tokens[position].Type,TokenType.RCurly))
         {
-            if(tokens[position].Type!=TokenType.RCurly)
+            if(!LookAhead(tokens[position].Type,TokenType.RCurly))
                 position++;
             if(Binary!= null)
                 return Binary;
@@ -432,7 +431,8 @@ public List<Expression> ParseRanges()
                         position++;
                         if(LookAhead(tokens[position-1].Type, TokenType.RBracket))
                         {
-                            if(LookAhead(tokens[position].Type, TokenType.Comma)|| LookAhead(tokens[position].Type, TokenType.Semicolon)
+                            if(LookAhead(tokens[position].Type, TokenType.Comma)||
+                              LookAhead(tokens[position].Type, TokenType.Semicolon)
                             ||LookAhead(tokens[position].Type, TokenType.RCurly))
                             {
                                 if(!LookAhead(tokens[position].Type, TokenType.RCurly))
@@ -615,23 +615,23 @@ private OnActivation ParseOnActivation()
 
 
     private InstructionBlock ParseInstructionBlock(bool single= false)
-    {//No debuggeado problemas a la hora de parsear Id, diferenciacion entre parseo de asignacion y uso de id para llamar un metodo o usar una propiedad
+    {
         InstructionBlock block = new();
         do
         {
-            if(tokens[position].Type==TokenType.Id)
+            if(LookAhead(tokens[position].Type,TokenType.Id))
             {
                 block.Instructions.Add(ParseInstructionAssigment());
             }
-            else if(tokens[position].Type==TokenType.For)
+            else if(LookAhead(tokens[position].Type,TokenType.For))
             {
                 block.Instructions.Add(ParseFor());
             }
-            else if(tokens[position].Type==TokenType.While)
+            else if(LookAhead(tokens[position].Type,TokenType.While))
             {
                 block.Instructions.Add(ParseWhile());
             }
-            else if(tokens[position].Type== TokenType.RCurly)
+            else if(LookAhead(tokens[position].Type, TokenType.RCurly))
             {
                 position++;
                 break;
@@ -646,7 +646,7 @@ private OnActivation ParseOnActivation()
     {
         Selector selector= new();
         position++;
-        if(tokens[position++].Type== TokenType.Colon && tokens[position++].Type== TokenType.LCurly)
+        if(LookAhead(tokens[position++].Type, TokenType.Colon) && LookAhead(tokens[position++].Type, TokenType.LCurly))
         while(position< tokens.Count)
         {
             switch (tokens[position].Type)
@@ -661,7 +661,7 @@ private OnActivation ParseOnActivation()
                     selector.Predicate = ParsePredicate();
                     break;
                 case TokenType.RCurly:
-                    if(tokens[++position].Type==TokenType.Comma|| tokens[position].Type==TokenType.Semicolon)
+                    if(LookAhead(tokens[++position].Type,TokenType.Comma)|| LookAhead(tokens[position].Type,TokenType.Semicolon))
                     {
                         position++;
                         return selector;
@@ -677,18 +677,18 @@ private OnActivation ParseOnActivation()
 
     public Predicate ParsePredicate()
     {
-        if(tokens[++position].Type== TokenType.Colon)
+        if(LookAhead(tokens[++position].Type, TokenType.Colon))
         {
             Predicate predicate= new();
-            if(tokens[++position].Type== TokenType.LParen && tokens[++position].Type== TokenType.Id)
+            if(LookAhead(tokens[++position].Type, TokenType.LParen) && LookAhead(tokens[++position].Type, TokenType.Id))
                 predicate.Unit= new IdentifierExpression(tokens[position]);
-                if(tokens[++position].Type== TokenType.RParen && tokens[++position].Type== TokenType.Arrow)
+                if(LookAhead(tokens[++position].Type, TokenType.RParen) && LookAhead(tokens[++position].Type, TokenType.Arrow))
                 {
                     position++;
                     predicate.Condition= ParseExpression();
-                    if(tokens[position].Type== TokenType.Comma|| tokens[position].Type== TokenType.RCurly)
+                    if(LookAhead(tokens[position].Type, TokenType.Comma)|| LookAhead(tokens[position].Type, TokenType.RCurly))
                     {
-                        if(tokens[position].Type== TokenType.Comma)
+                        if(LookAhead(tokens[position].Type, TokenType.Comma))
                         position++;
                         return predicate;
                     }
@@ -708,16 +708,16 @@ private OnActivation ParseOnActivation()
     {
         ForExpression ForExp = new();
         position++;
-        if( tokens[position++].Type== TokenType.Id )
+        if(LookAhead(tokens[position++].Type, TokenType.Id))
         {//ForExp initial sintaxis
             ForExp.Variable = new IdentifierExpression(tokens[position-1]);
-            if(tokens[position++].Type == TokenType.In && tokens[position++].Type== TokenType.Id)
+            if(LookAhead(tokens[position++].Type, TokenType.In) && LookAhead(tokens[position++].Type, TokenType.Id))
             {
                 ForExp.Collection= new IdentifierExpression(tokens[position-1]);
-                if(tokens[position++].Type== TokenType.LCurly)
+                if(LookAhead(tokens[position++].Type, TokenType.LCurly))
                 {
                     ForExp.Instructions=ParseInstructionBlock();
-                    if(tokens[position].Type== TokenType.Comma||tokens[position].Type== TokenType.Semicolon)
+                    if(LookAhead(tokens[position].Type, TokenType.Comma)||LookAhead(tokens[position].Type, TokenType.Semicolon))
                     {
                         position++;
                     }
@@ -741,12 +741,12 @@ private OnActivation ParseOnActivation()
     {
         WhileExpression WhileExp = new();
         position++;
-        if( tokens[position++].Type== TokenType.LParen)
+        if(LookAhead(tokens[position++].Type, TokenType.LParen))
         {//WhileExp initial sintaxis
             WhileExp.Condition = ParseExpression();
-            if(tokens[position++].Type == TokenType.RParen)
+            if(LookAhead(tokens[position++].Type, TokenType.RParen))
             {
-                if(tokens[position++].Type== TokenType.LCurly)
+                if(LookAhead(tokens[position++].Type, TokenType.LCurly))
                 {
                     WhileExp.Instructions=ParseInstructionBlock();
                 }
