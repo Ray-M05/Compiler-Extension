@@ -1,12 +1,4 @@
 namespace Compiler;
-
-// public interface IEffect_ 
-// {
-//     Expression? Name { get; set; }
-//     Expression? Params { get; set; }
-//     Expression? Action { get; set; }
-// }
-
 public class EffectInstance: Expression
 {
     public Expression? Name  {get; set;}

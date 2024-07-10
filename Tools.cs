@@ -18,24 +18,25 @@ public static class Tools
         return false;
     }
 
-        public static Dictionary<TokenType, int> MagicNumbers = new()
-        {
-            { TokenType.And, 1 },
-            { TokenType.Or, 1 },
-            { TokenType.Equal, 2 },
-            { TokenType.LessEq, 2 },
-            { TokenType.MoreEq, 2 },
-            { TokenType.More, 2 },
-            { TokenType.Less, 2 },
-            { TokenType.Plus, 3 },
-            { TokenType.Minus, 3 },
-            { TokenType.Concatenation, 3 },
-            { TokenType.SpaceConcatenation, 3 },
-            { TokenType.Multiply, 4 },
-            { TokenType.Divide, 4 },
-            { TokenType.Not, 4 },
-            { TokenType.Pow, 5 },
-            { TokenType.Point, 6 }
-        };
-    }
+    public static Dictionary<TokenType, int> MagicNumbers = new()
+    {
+        { TokenType.And, 1 },
+        { TokenType.Or, 1 },
+        { TokenType.Equal, 2 },
+        { TokenType.LessEq, 2 },
+        { TokenType.MoreEq, 2 },
+        { TokenType.More, 2 },
+        { TokenType.Less, 2 },
+        { TokenType.Plus, 3 },
+        { TokenType.Minus, 3 },
+        { TokenType.Concatenation, 3 },
+        { TokenType.SpaceConcatenation, 3 },
+        { TokenType.Multiply, 4 },
+        { TokenType.Divide, 4 },
+        { TokenType.Not, 4 },
+        { TokenType.Pow, 5 },
+        { TokenType.Point, 6 }
+    };
+    
+}
 

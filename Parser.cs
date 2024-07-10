@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+
 
 namespace Compiler;
 
@@ -40,7 +38,6 @@ public class Parser
             { "Power", AssignTreatment },
             { "Range",RangeTreatment },
             { "OnActivation",  OnActivTreatment},
-           // { "PostAction",  AssignTreatment} 
         };
 
         EffectParsing = new Dictionary<string, Action<EffectInstance, PropertyInfo>>
@@ -113,7 +110,8 @@ public class Parser
     }
     public Expression ParsePrimaryExpression()
     {
-        if (position >= tokens.Count) throw new Exception("Unexpected end of input");
+        if (position >= tokens.Count)
+        throw new Exception("Unexpected end of input");
         if (LookAhead(tokens[position].Type, TokenType.LParen))
         {
             position++;
@@ -163,7 +161,6 @@ public class Parser
             Expression operand = ParsePrimaryExpression();
             return new AtomExpression(operand, unary);
         }
-
         else if (LookAhead(tokens[position].Type, TokenType.Shuffle)||LookAhead(tokens[position].Type, TokenType.Pop))
         {
             Token token= tokens[position];
@@ -230,7 +227,8 @@ public class Parser
                 throw new Exception();
         }
         else
-        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+        Errors.List.Add(new CompilingError("Unexpected Comma or Semicolon",token.PositionError));
+        return null;
     }
 
     private Expression ParseParamAssigment()
@@ -260,7 +258,8 @@ public class Parser
                 }
             }
         }
-        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+        Errors.List.Add(new CompilingError("Unexpected Comma or Semicolon",token.PositionError));
+        return null;
     }
 
     private Expression ParseInstructionAssigment()
@@ -276,7 +275,7 @@ public class Parser
                 position++;
                 right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
-            }//NADA DE ESTO ESTÁ HECHO
+            }
             else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
@@ -301,7 +300,10 @@ public class Parser
                 return left;
         }
         else
-        throw new Exception($"{position} Unexpected assign token at {token.PositionError.Row} file and {token.PositionError.Column} column({token.Type}), expected Comma or Semicolon");
+        {
+            Errors.List.Add(new CompilingError("Unexpected Comma or Semicolon",token.PositionError));
+            return null;
+        }
     }
     
     private Expression ParseGeneral()
@@ -320,10 +322,10 @@ public class Parser
                     token = tokens[position];
                 }
                 else
-                throw new Exception($"Invalid token {tokens[position-1]}, expected Left Curly");
+                Errors.List.Add(new CompilingError("Expected Left Curly, invalid token",token.PositionError));
             }
             else
-            throw new Exception("Invalid program structure, only expects cards or effects");
+            Errors.List.Add(new CompilingError("Only expects cards or effects",token.PositionError));
         }
         return general;
     }
@@ -351,7 +353,7 @@ private CardInstance ParseCard()
                 return card;
             }
             else
-            throw new Exception();
+            Errors.List.Add(new CompilingError("Invalid token, expecting properties of cards or Right Curly",token.PositionError));
         }
         return card;
     }
@@ -378,7 +380,7 @@ private EffectInstance ParseEffect()
             return effect;
         }
         else
-        throw new Exception();
+        Errors.List.Add(new CompilingError("Invalid token, expecting properties of effects or Right Curly",token.PositionError));;
     }
     return effect;
 }
@@ -442,21 +444,20 @@ public List<Expression> ParseRanges()
                                 break;
                             }
                             else
-                                throw new Exception("Unexpected token");
-                            
+                                Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
                         }
-                        
                     }
                     else
-                        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected Comma");
+                        Errors.List.Add(new CompilingError("Invalid token, expecting Comma",tokens[position].PositionError));
                 }
                 else
-                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
+                    Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
             }
             return ranges;
         }
         else
-            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column ");
+            {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+            return null;}
     }
 
 
@@ -506,10 +507,10 @@ private OnActivation ParseOnActivation()
                 break;
             }
             else
-            throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in Params definition");
+            Errors.List.Add(new CompilingError("Invalid params definition",token.PositionError));
         }
         else
-        throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in ");
+        Errors.List.Add(new CompilingError("Invalid token",token.PositionError));
         return parameters;
     }
 
@@ -540,10 +541,10 @@ private OnActivation ParseOnActivation()
                    }
             }
             else
-            throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in Params definition");
+            Errors.List.Add(new CompilingError("Invalid effect parameter definition",token.PositionError));
         }
         else
-        throw new Exception($"{position} Invalid Token at {token.PositionError.Row} row and {token.PositionError.Column} column expected in ");
+        Errors.List.Add(new CompilingError("Invalid token",token.PositionError));
         return parameters;
     }
 
@@ -552,7 +553,7 @@ private OnActivation ParseOnActivation()
         Action Action = new();
         position++;
         if(LookAhead(tokens[position++].Type, TokenType.Colon) )
-        {//Action initial sintaxis
+        {
             if(LookAhead(tokens[position++].Type, TokenType.LParen) &&
                LookAhead(tokens[position++].Type, TokenType.Id))
                 Action.Targets= new IdentifierExpression(tokens[position-1]);
@@ -569,7 +570,7 @@ private OnActivation ParseOnActivation()
                 }
         }
         else
-        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on an Action declaration statement");
+        Errors.List.Add(new CompilingError("Invalid Action declaration",tokens[position].PositionError));
         return Action;
     }
 
@@ -595,7 +596,7 @@ private OnActivation ParseOnActivation()
                     if(LookAhead(tokens[position++].Type, TokenType.Colon))
                     effect.PostAction = ParseEffectParam();// Manejo para TokenType.RANGE
                     else
-                    throw new Exception($"Invalid Token at {tokens[position-1].PositionError.Row} row and {tokens[position-1].PositionError.Column} column expected Colon in PostAction statement");
+                    Errors.List.Add(new CompilingError("Expected Colon in effect parameter definition",tokens[position].PositionError));
                     break;
                 case TokenType.RCurly:
                     if(LookAhead(tokens[++position].Type,TokenType.Comma)|| 
@@ -607,7 +608,8 @@ private OnActivation ParseOnActivation()
                     }
                     return effect;
                 default:
-                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected card item");
+                    {Errors.List.Add(new CompilingError("Expected card property",tokens[position].PositionError));
+                    return null;}
             }
         }
         return effect;
@@ -637,8 +639,9 @@ private OnActivation ParseOnActivation()
                 break;
             }
             else
-            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in Instruction Block definition");
-        }while(true && !single);
+            Errors.List.Add(new CompilingError("Invalid instruction definition",tokens[position].PositionError));
+        }
+        while(true && !single);
         return block;
     }
 
@@ -667,9 +670,11 @@ private OnActivation ParseOnActivation()
                         return selector;
                     }
                     else
-                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
+                    {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+                    break;}
                 default:
-                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected selector item");
+                    {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+                    return null;}
             }
         }
         return selector;
@@ -693,14 +698,14 @@ private OnActivation ParseOnActivation()
                         return predicate;
                     }
                     else
-                        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected Comma");
+                        Errors.List.Add(new CompilingError("Expected Comma",tokens[position].PositionError));
                 }
                 else
-                    throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected in ");
-        
+                    Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
         }
         else
-            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column ");
+            Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+            return null;
     }
 
 
@@ -709,7 +714,7 @@ private OnActivation ParseOnActivation()
         ForExpression ForExp = new();
         position++;
         if(LookAhead(tokens[position++].Type, TokenType.Id))
-        {//ForExp initial sintaxis
+        {
             ForExp.Variable = new IdentifierExpression(tokens[position-1]);
             if(LookAhead(tokens[position++].Type, TokenType.In) && LookAhead(tokens[position++].Type, TokenType.Id))
             {
@@ -730,11 +735,11 @@ private OnActivation ParseOnActivation()
             }
             else
             {
-                throw new Exception($"{position} Invalid Token at {tokens[position-1].PositionError.Row} row and {tokens[position-1].PositionError.Column} column expected in ");
+                Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
             }
         }
         else
-        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on a For declaration statement");
+        Errors.List.Add(new CompilingError("Invalid for declaration statement",tokens[position].PositionError));
         return ForExp;
     }
     private WhileExpression ParseWhile()
@@ -742,7 +747,7 @@ private OnActivation ParseOnActivation()
         WhileExpression WhileExp = new();
         position++;
         if(LookAhead(tokens[position++].Type, TokenType.LParen))
-        {//WhileExp initial sintaxis
+        {
             WhileExp.Condition = ParseExpression();
             if(LookAhead(tokens[position++].Type, TokenType.RParen))
             {
@@ -758,7 +763,7 @@ private OnActivation ParseOnActivation()
             }
         }
         else
-        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} on an Action declaration statement");
+        Errors.List.Add(new CompilingError("Invalid while declaration statement",tokens[position].PositionError));
         return WhileExp;
     }
 }

@@ -78,11 +78,11 @@ switch(Operator)
 } 
 }
 }
-public class Terminal: Expression
+public class Atom: Expression
 {
     public string? ValueForPrint;
     public Token Value { get; }
-    public Terminal(Token token)
+    public Atom(Token token)
     {
         this.ValueForPrint = token.Meaning;
         Value= token;
@@ -116,7 +116,7 @@ public class AtomExpression : Expression
         }
     }
 }
-public class Number: Terminal
+public class Number: Atom
 {
     public Number(Token token): base(token)
     {
@@ -127,7 +127,7 @@ public class Number: Terminal
         return Convert.ToDouble(Value.Meaning);
     }
 }
-public class BooleanLiteral : Terminal
+public class BooleanLiteral : Atom
 {
     public BooleanLiteral(Token token): base(token)
     {
@@ -141,7 +141,7 @@ public class BooleanLiteral : Terminal
 
  
 
-public class IdentifierExpression : Terminal
+public class IdentifierExpression : Atom
 {
     public IdentifierExpression(Token token):base(token)
     {
@@ -149,7 +149,7 @@ public class IdentifierExpression : Terminal
     }
 
 }
-public class StringExpression : Terminal
+public class StringExpression : Atom
 {
     public StringExpression(Token token):base(token)
     {

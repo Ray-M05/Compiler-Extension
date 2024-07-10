@@ -16,6 +16,11 @@
                 }
                 Parser parser = new(tokens);
                 Expression root = parser.Parse();
+
+                foreach (CompilingError item in Errors.List)
+                {
+                    Console.WriteLine(item);
+                }
                 Console.WriteLine(parser.position);
                 PrintExpressionTree(root);
             }
@@ -33,7 +38,7 @@
                 PrintExpressionTree(binaryNode.Left, indentLevel + 1);
                 PrintExpressionTree(binaryNode.Right, indentLevel + 1);
             }
-            else if (node is Terminal numberNode)
+            else if (node is Atom numberNode)
             {
                 Console.WriteLine(new string(' ', indentLevel * 4) + $"Value: {numberNode.ValueForPrint}");
             }
