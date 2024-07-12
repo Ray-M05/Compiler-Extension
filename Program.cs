@@ -38,6 +38,12 @@
                 PrintExpressionTree(binaryNode.Left, indentLevel + 1);
                 PrintExpressionTree(binaryNode.Right, indentLevel + 1);
             }
+            else if(node is Action action)
+            {
+                PrintExpressionTree(action.Context,indentLevel+1);
+                PrintExpressionTree(action.Targets,indentLevel+1);
+                PrintExpressionTree(action.Instructions,indentLevel+1);
+            }
             else if (node is Atom numberNode)
             {
                 Console.WriteLine(new string(' ', indentLevel * 4) + $"Value: {numberNode.ValueForPrint}");
@@ -65,8 +71,31 @@
                 }
                 if(effNode.Action!= null)
                 {
-
+                    PrintExpressionTree(effNode.Action);
                 }
+            }
+            else if(node is EffectParam effassign)
+            {
+                if(effassign.Effect!= null)
+                {
+                    foreach(Expression exp in effassign.Effect)
+                    {
+                        PrintExpressionTree(exp, indentLevel +1);
+                    }
+                }
+                if(effassign.Selector!= null)
+                {
+                    PrintExpressionTree(effassign.Selector,indentLevel+1);
+                }
+                if(effassign.PostAction!= null)
+                {
+                    PrintExpressionTree(effassign.PostAction);
+                }
+            }
+            else if(node is OnActivation onact)
+            {
+                foreach(Expression eff in onact.Effects)
+                PrintExpressionTree(eff, indentLevel+1);
             }
             else if (node is CardInstance card)
             {
@@ -83,7 +112,44 @@
                     PrintExpressionTree(range, indentLevel + 2);
                 }
             }
-            else if(node is AtomExpression unaryOperator)
+            else if(node is UnaryExpression unaryOperator)
             PrintExpressionTree(unaryOperator.Operand, indentLevel + 1);
+
+            else if(node is InstructionBlock instructionBlock)
+            {
+                foreach(Expression exp in instructionBlock.Instructions)
+                {
+                    PrintExpressionTree(exp, indentLevel + 1);
+                }
+            }
+            
+            else if(node is ForExpression forexp)
+            {
+                PrintExpressionTree(forexp.Variable, indentLevel+1);
+                PrintExpressionTree(forexp.Collection,indentLevel +1);
+                PrintExpressionTree(forexp.Instructions,indentLevel +1);
+            }
+            
+            
+            else if(node is WhileExpression whilexp)
+            {
+                PrintExpressionTree(whilexp.Condition,indentLevel +1);
+                PrintExpressionTree(whilexp.Instructions,indentLevel +1);
+            }
+            
+            
+            else if(node is Selector selector)
+            {
+                PrintExpressionTree(selector.Source,indentLevel+1);
+                PrintExpressionTree(selector.Single,indentLevel+1);
+                PrintExpressionTree(selector.Predicate,indentLevel+1);
+            }
+            
+            
+            else if(node is Predicate predicate)
+            {
+                PrintExpressionTree(predicate.Unit,indentLevel+1);
+                PrintExpressionTree(predicate.Condition,indentLevel+1);
+            }
         }
     }

@@ -18,7 +18,7 @@ public static class Tools
         return false;
     }
 
-    public static Dictionary<TokenType, int> MagicNumbers = new()
+    public static Dictionary<TokenType, int> GetPrecedence = new()
     {
         { TokenType.And, 1 },
         { TokenType.Or, 1 },

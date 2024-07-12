@@ -2,6 +2,7 @@
 
  public abstract class Expression
  {
+    //public object? Value;
     public string? printed;
     public virtual void Print(int indentLevel = 0)
     {
@@ -93,12 +94,12 @@ public class Atom: Expression
     }
 }
 
-public class AtomExpression : Expression
+public class UnaryExpression : Expression
 {
     public Expression Operand { get; set; }
     public TokenType Operator { get; set; }
 
-    public AtomExpression(Expression operand, TokenType Operator)
+    public UnaryExpression(Expression operand, TokenType Operator)
     {
         Operand = operand;
         this.Operator = Operator;

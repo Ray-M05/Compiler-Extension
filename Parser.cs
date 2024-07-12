@@ -88,6 +88,115 @@ public class Parser
         return null;
     }
 
+    private Expression ParseGeneral()
+    {
+        ProgramExpression general= new();
+        Token token = tokens[position];
+        while(position< tokens.Count)
+        {
+            if(LookAhead(token.Type, TokenType.Effect) || LookAhead(token.Type, TokenType.Card))
+            {
+                if(LookAhead(tokens[++position].Type, TokenType.LCurly))
+                {
+                    position++;
+                    Options[token.Type].Invoke(general);
+                    if(position< tokens.Count)
+                    token = tokens[position];
+                }
+                else
+                Errors.List.Add(new CompilingError("Expected Left Curly, invalid token",token.PositionError));
+            }
+            else
+            Errors.List.Add(new CompilingError("Only expects cards or effects",token.PositionError));
+        }
+    return general;
+    }
+
+
+    private CardInstance ParseCard()
+    {
+        CardInstance card= new();
+        Token token = tokens[position];
+        while(position< tokens.Count)
+        {
+            if(LookAhead(token.Type, TokenType.Name)||LookAhead(token.Type, TokenType.Type)||
+            LookAhead(token.Type, TokenType.Range)||LookAhead(token.Type, TokenType.Power)||
+            LookAhead(token.Type, TokenType.Faction)||LookAhead(token.Type, TokenType.OnActivation))
+            {
+                var instance = card.GetType();
+                var prop = instance.GetProperty(token.Meaning);
+                var pars = CardParsing[prop.Name];
+                pars.Invoke(card, prop);
+                token= tokens[position];
+            }
+            else if(LookAhead(token.Type, TokenType.RCurly))
+            {
+                position++;
+                return card;
+            }
+            else
+            Errors.List.Add(new CompilingError("Invalid token, expecting properties of cards or Right Curly",token.PositionError));
+        }
+    return card;
+    }
+
+    private EffectInstance ParseEffect()
+    {
+        EffectInstance effect= new();
+        Token token = tokens[position];
+        while(position< tokens.Count)
+        {
+            if(LookAhead(token.Type, TokenType.Name)||
+            LookAhead(token.Type, TokenType.Params)||
+            LookAhead(token.Type, TokenType.Action))
+            {
+                var instance = effect.GetType();
+                var prop = instance.GetProperty(token.Meaning);
+                var pars = EffectParsing[prop.Name];
+                pars.Invoke(effect, prop);
+                token= tokens[position];
+            }
+            else if(LookAhead(token.Type, TokenType.RCurly))
+            {
+                position++;
+                return effect;
+            }
+            else
+            Errors.List.Add(new CompilingError("Invalid token, expecting properties of effects or Right Curly",token.PositionError));;
+        }
+    return effect;
+    }
+
+
+    private void AssignTreatment(CardInstance card, PropertyInfo p)
+    {
+        p.SetValue(card, ParsePropertyAssignment());
+    }
+    private void AssignTreatment (EffectInstance effect, PropertyInfo p)
+    {
+        p.SetValue(effect, ParsePropertyAssignment());
+    }
+
+    private void RangeTreatment (CardInstance card, PropertyInfo p)
+    {
+        p.SetValue(card, ParseRanges());
+    }
+
+    private void OnActivTreatment (CardInstance card, PropertyInfo p)
+    {
+        p.SetValue(card, ParseOnActivation());
+    }
+
+    private void ParamsTreatment (EffectInstance effect, PropertyInfo p)
+    {
+        p.SetValue(effect, ParseParams());
+    }
+
+    private void ActionTreatment (EffectInstance effect, PropertyInfo p)
+    {
+        p.SetValue(effect, ParseAction());
+    }
+
     public Expression ParseExpression(int parentprecedence =0)
     {
         var left = ParsePrimaryExpression();
@@ -95,8 +204,8 @@ public class Parser
         while (position < tokens.Count)
         {
             int precedence;
-            if(Tools.MagicNumbers.ContainsKey(tokens[position].Type))
-            precedence = Tools.MagicNumbers[tokens[position].Type];
+            if(Tools.GetPrecedence.ContainsKey(tokens[position].Type))
+            precedence = Tools.GetPrecedence[tokens[position].Type];
             else
             precedence = 0;
             if(precedence==0|| precedence<= parentprecedence)
@@ -159,7 +268,7 @@ public class Parser
             TokenType unary = tokens[position].Type;
             position++;
             Expression operand = ParsePrimaryExpression();
-            return new AtomExpression(operand, unary);
+            return new UnaryExpression(operand, unary);
         }
         else if (LookAhead(tokens[position].Type, TokenType.Shuffle)||LookAhead(tokens[position].Type, TokenType.Pop))
         {
@@ -167,7 +276,7 @@ public class Parser
             if(LookAhead(tokens[++position].Type, TokenType.LParen) && LookAhead(tokens[++position].Type, TokenType.RParen))
             {
                 position++;
-                return new AtomExpression(null, token.Type);
+                return new UnaryExpression(null, token.Type);
             }
         }
         else if (LookAhead(tokens[position].Type, TokenType.Push) ||LookAhead(tokens[position].Type, TokenType.SendBottom)
@@ -182,7 +291,7 @@ public class Parser
                         Expression argument = ParseExpression();
                         if(LookAhead(tokens[position++].Type, TokenType.RParen))
                         {
-                            return new AtomExpression(argument, token.Type);
+                            return new UnaryExpression(argument, token.Type);
                         }
                     }
                 }
@@ -206,13 +315,13 @@ public class Parser
             else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
-                right = new AtomExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new AtomExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         
@@ -279,13 +388,13 @@ public class Parser
             else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
-                right = new AtomExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new AtomExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token.Type);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         
@@ -305,115 +414,6 @@ public class Parser
             return null;
         }
     }
-    
-    private Expression ParseGeneral()
-    {
-        ProgramExpression general= new();
-        Token token = tokens[position];
-        while(position< tokens.Count)
-        {
-            if(LookAhead(token.Type, TokenType.Effect) || LookAhead(token.Type, TokenType.Card))
-            {
-                if(LookAhead(tokens[++position].Type, TokenType.LCurly))
-                {
-                    position++;
-                    Options[token.Type].Invoke(general);
-                    if(position< tokens.Count)
-                    token = tokens[position];
-                }
-                else
-                Errors.List.Add(new CompilingError("Expected Left Curly, invalid token",token.PositionError));
-            }
-            else
-            Errors.List.Add(new CompilingError("Only expects cards or effects",token.PositionError));
-        }
-        return general;
-    }
-
-
-private CardInstance ParseCard()
-    {
-        CardInstance card= new();
-        Token token = tokens[position];
-        while(position< tokens.Count)
-        {
-            if(LookAhead(token.Type, TokenType.Name)||LookAhead(token.Type, TokenType.Type)||
-               LookAhead(token.Type, TokenType.Range)||LookAhead(token.Type, TokenType.Power)||
-               LookAhead(token.Type, TokenType.Faction)||LookAhead(token.Type, TokenType.OnActivation))
-            {
-                var instance = card.GetType();
-                var prop = instance.GetProperty(token.Meaning);
-                var pars = CardParsing[prop.Name];
-                pars.Invoke(card, prop);
-                token= tokens[position];
-            }
-            else if(LookAhead(token.Type, TokenType.RCurly))
-            {
-                position++;
-                return card;
-            }
-            else
-            Errors.List.Add(new CompilingError("Invalid token, expecting properties of cards or Right Curly",token.PositionError));
-        }
-        return card;
-    }
-
-private EffectInstance ParseEffect()
-{
-    EffectInstance effect= new();
-    Token token = tokens[position];
-    while(position< tokens.Count)
-    {
-        if(LookAhead(token.Type, TokenType.Name)||
-           LookAhead(token.Type, TokenType.Params)||
-           LookAhead(token.Type, TokenType.Action))
-        {
-            var instance = effect.GetType();
-            var prop = instance.GetProperty(token.Meaning);
-            var pars = EffectParsing[prop.Name];
-            pars.Invoke(effect, prop);
-            token= tokens[position];
-        }
-        else if(LookAhead(token.Type, TokenType.RCurly))
-        {
-            position++;
-            return effect;
-        }
-        else
-        Errors.List.Add(new CompilingError("Invalid token, expecting properties of effects or Right Curly",token.PositionError));;
-    }
-    return effect;
-}
-
-
-private void AssignTreatment(CardInstance card, PropertyInfo p)
-{
-    p.SetValue(card, ParsePropertyAssignment());
-}
-private void AssignTreatment (EffectInstance effect, PropertyInfo p)
-{
-    p.SetValue(effect, ParsePropertyAssignment());
-}
-
-private void RangeTreatment (CardInstance card, PropertyInfo p)
-{
-    p.SetValue(card, ParseRanges());
-}
-
-private void OnActivTreatment (CardInstance card, PropertyInfo p)
-{
-    p.SetValue(card, ParseOnActivation());
-}
-
-private void ParamsTreatment (EffectInstance effect, PropertyInfo p)
-{
-    p.SetValue(effect, ParseParams());
-}
-
-private void ActionTreatment (EffectInstance effect, PropertyInfo p)
-{
-    p.SetValue(effect, ParseAction());
-}
 
 public List<Expression> ParseRanges()
     {
@@ -462,27 +462,27 @@ public List<Expression> ParseRanges()
 
 
 private OnActivation ParseOnActivation()
+{
+    OnActivation activation = new();
+    position++;
+    if(LookAhead(tokens[position++].Type, TokenType.Colon) &&
+        LookAhead(tokens[position++].Type, TokenType.LBracket))
+    while(position< tokens.Count)
     {
-        OnActivation activation = new();
-        position++;
-        if(LookAhead(tokens[position++].Type, TokenType.Colon) &&
-           LookAhead(tokens[position++].Type, TokenType.LBracket))
-        while(position< tokens.Count)
+        if(LookAhead(tokens[position].Type, TokenType.LCurly))
         {
-            if(LookAhead(tokens[position].Type, TokenType.LCurly))
-            {
-                activation.Effects.Add(ParseEffectParam());
-            }
-            else if(LookAhead(tokens[position].Type, TokenType.RBracket))
-            {
-                position++;
-                break;
-            }
-            else
-            throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
+            activation.Effects.Add(ParseEffectParam());
         }
-        return activation;
+        else if(LookAhead(tokens[position].Type, TokenType.RBracket))
+        {
+            position++;
+            break;
+        }
+        else
+        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
     }
+    return activation;
+}
 
 
     private List<Expression> ParseParams()
@@ -601,9 +601,9 @@ private OnActivation ParseOnActivation()
                 case TokenType.RCurly:
                     if(LookAhead(tokens[++position].Type,TokenType.Comma)|| 
                        LookAhead(tokens[position].Type,TokenType.Semicolon)||
-                       LookAhead(tokens[position].Type,TokenType.RCurly))
+                       LookAhead(tokens[position].Type,TokenType.RBracket))
                     {
-                        if(!LookAhead(tokens[position].Type,TokenType.RCurly))
+                        if(!LookAhead(tokens[position].Type,TokenType.RBracket))
                         position++;
                     }
                     return effect;
@@ -664,14 +664,18 @@ private OnActivation ParseOnActivation()
                     selector.Predicate = ParsePredicate();
                     break;
                 case TokenType.RCurly:
-                    if(LookAhead(tokens[++position].Type,TokenType.Comma)|| LookAhead(tokens[position].Type,TokenType.Semicolon))
+                    if(LookAhead(tokens[++position].Type,TokenType.Comma)|| LookAhead(tokens[position].Type,TokenType.Semicolon)|| LookAhead(tokens[position].Type, TokenType.RCurly))
                     {
+                        if(!LookAhead(tokens[position].Type, TokenType.RCurly))
                         position++;
                         return selector;
                     }
                     else
-                    {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
-                    break;}
+                    {
+                        Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+                        break;
+                    }
+
                 default:
                     {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
                     return null;}
