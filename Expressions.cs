@@ -2,26 +2,38 @@
 
  public abstract class Expression
  {
-    //public object? Value;
     public string? printed;
+    public ValueType CheckType;
     public virtual void Print(int indentLevel = 0)
     {
         Console.WriteLine(new string(' ', indentLevel * 4) + printed);
     }
+    public abstract ValueType SemanticCheck(Scope scope);
     public abstract object Evaluate();
  }
 public class ProgramExpression: Expression
 {
-    public List<EffectInstance> Effects;
-    public List<CardInstance> Cards;
+    public List<Expression> Instances;
     public ProgramExpression()
     {
-        Effects= new();
-        Cards= new();
+        Instances= new();
     }
+
+
     public override object Evaluate()
     {
         throw new NotImplementedException();
+    }
+    public override ValueType SemanticCheck(Scope scope)
+    {
+        foreach(var instance in Instances)
+        {
+            if(instance.SemanticCheck(scope)!= ValueType.Checked)
+            {
+                Errors.List.Add(new CompilingError("Semantic Error at the Program",new Position()));
+            }
+        }
+        return ValueType.Void;
     }
 }
 
@@ -40,44 +52,44 @@ public class BinaryExpression : Expression
     }
     public override object Evaluate()
     {
-switch(Operator)
-{
-    case TokenType.Plus:
-        return (double)Left.Evaluate() + (double)Right.Evaluate();
-    case TokenType.Minus:
-        return (double)Left.Evaluate() - (double)Right.Evaluate();
-    case TokenType.Multiply:
-        return (double)Left.Evaluate() * (double)Right.Evaluate();
-    case TokenType.Divide:
-        return (double)Left.Evaluate() / (double)Right.Evaluate();
-    case TokenType.Pow:
-        return Math.Pow((double)Left.Evaluate(), (double)Right.Evaluate());
+        switch(Operator)
+        {
+            case TokenType.Plus:
+                return (double)Left.Evaluate() + (double)Right.Evaluate();
+            case TokenType.Minus:
+                return (double)Left.Evaluate() - (double)Right.Evaluate();
+            case TokenType.Multiply:
+                return (double)Left.Evaluate() * (double)Right.Evaluate();
+            case TokenType.Divide:
+                return (double)Left.Evaluate() / (double)Right.Evaluate();
+            case TokenType.Pow:
+                return Math.Pow((double)Left.Evaluate(), (double)Right.Evaluate());
 
-    case TokenType.Equal:
-        return Tools.EqualTerm(Left.Evaluate(), Right.Evaluate());
-    case TokenType.LessEq:
-        return (double)Left.Evaluate() <= (double)Right.Evaluate();
-    case TokenType.MoreEq:
-        return (double)Left.Evaluate() >= (double)Right.Evaluate();
-    case TokenType.More:
-        return (double)Left.Evaluate() > (double)Right.Evaluate();
-    case TokenType.Less:
-        return (double)Left.Evaluate() < (double)Right.Evaluate();
-        
-    case TokenType.And:
-        return (bool)Left.Evaluate() && (bool)Right.Evaluate();
-    case TokenType.Or:
-        return (bool)Left.Evaluate() || (bool)Right.Evaluate();
+            case TokenType.Equal:
+                return Tools.EqualTerm(Left.Evaluate(), Right.Evaluate());
+            case TokenType.LessEq:
+                return (double)Left.Evaluate() <= (double)Right.Evaluate();
+            case TokenType.MoreEq:
+                return (double)Left.Evaluate() >= (double)Right.Evaluate();
+            case TokenType.More:
+                return (double)Left.Evaluate() > (double)Right.Evaluate();
+            case TokenType.Less:
+                return (double)Left.Evaluate() < (double)Right.Evaluate();
+                
+            case TokenType.And:
+                return (bool)Left.Evaluate() && (bool)Right.Evaluate();
+            case TokenType.Or:
+                return (bool)Left.Evaluate() || (bool)Right.Evaluate();
 
-    case TokenType.Concatenation:
-        return (string)Left.Evaluate() + (string)Right.Evaluate();
-    case TokenType.SpaceConcatenation:
-        return (string)Left.Evaluate() +" "+ (string)Right.Evaluate();
+            case TokenType.Concatenation:
+                return (string)Left.Evaluate() + (string)Right.Evaluate();
+            case TokenType.SpaceConcatenation:
+                return (string)Left.Evaluate() +" "+ (string)Right.Evaluate();
 
-    default:
-        throw new Exception("Invalid Operator");
-} 
-}
+            default:
+                throw new Exception("Invalid Operator");
+        } 
+    }
 }
 public class Atom: Expression
 {
@@ -87,6 +99,10 @@ public class Atom: Expression
     {
         this.ValueForPrint = token.Meaning;
         Value= token;
+    }
+    public override ValueType SemanticCheck(Scope scope)
+    {
+        throw new NotImplementedException();
     }
     public override object Evaluate()
     {
@@ -115,6 +131,40 @@ public class UnaryExpression : Expression
             default:
             throw new Exception("Unknown unary operator");
         }
+    }
+
+    public override ValueType SemanticCheck(Scope scope)
+    {
+        switch(Operator)
+        {
+            case TokenType.Not:
+                Operand.CheckType = Operand.SemanticCheck(scope);
+                if(Operand.CheckType == ValueType.Bool)
+                {
+                    return ValueType.Bool;
+                }
+                else
+                {
+                    Errors.List.Add(new CompilingError("Semantic Error at the Unary Expression",new Position()));
+                }
+                return ValueType.Bool;
+            case TokenType.Minus:
+            case TokenType.Plus:
+                Operand.CheckType = Operand.SemanticCheck(scope);
+                if(Operand.CheckType == ValueType.Int)
+                {
+                    return ValueType.Int;
+                }
+                else
+                {
+                    Errors.List.Add(new CompilingError("Semantic Error at the Unary Expression",new Position()));
+                }
+                break;
+            default:
+            throw new Exception("Unknown unary operator");
+        }
+
+        
     }
 }
 public class Number: Atom
@@ -159,6 +209,10 @@ public class StringExpression : Atom
     public override object Evaluate()
     {
         return Value.Meaning.Substring(1,Value.Meaning.Length-2);
+    }
+    public override ValueType SemanticCheck(Scope scope)
+    {
+        CheckType = ValueType.CheckType
     }
 }
    

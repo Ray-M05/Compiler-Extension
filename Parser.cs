@@ -52,7 +52,7 @@ public class Parser
     {
         if(program is ProgramExpression p)
         {
-            p.Cards.Add(ParseCard());
+            p.Instances.Add(ParseCard());
         }
     }
     
@@ -60,7 +60,7 @@ public class Parser
     {
         if(program is ProgramExpression p)
         {
-            p.Effects.Add(ParseEffect());
+            p.Instances.Add(ParseEffect());
         }
     }
 

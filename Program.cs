@@ -50,7 +50,7 @@
             }
             else if (node is ProgramExpression prognode)
             {
-                foreach(EffectInstance eff in prognode.Effects)
+                foreach(EffectInstance eff in prognode.Instances)
                 {
                     PrintExpressionTree(eff, indentLevel + 1);
                 }
