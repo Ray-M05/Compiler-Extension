@@ -43,55 +43,55 @@ public static class Tools
         return token switch
         {
             // Strings
-            TokenType.NAME => ValueType.String,
-            TokenType.FACTION => ValueType.String,
-            TokenType.TYPE => ValueType.String,
-            TokenType.STRINGTYPE => ValueType.String,
-            TokenType.SOURCE => ValueType.String,
-            TokenType.EFFECTASSIGNMENT => ValueType.String,
+            TokenType.Name => ValueType.String,
+            TokenType.Faction => ValueType.String,
+            TokenType.Type => ValueType.String,
+            TokenType.StringType => ValueType.String,
+            TokenType.Source => ValueType.String,
+            TokenType.EffectParam => ValueType.String,
 
             // Players
-            TokenType.OWNER => ValueType.Player,
-            TokenType.TRIGGERPLAYER => ValueType.ListCard,
+            TokenType.Owner => ValueType.Player,
+            TokenType.TriggerPlayer => ValueType.CardCollection,
 
             // Numbers
-            TokenType.POWER => ValueType.Number,
-            TokenType.PLUS => ValueType.Number,
-            TokenType.MINUS => ValueType.Number,
-            TokenType.NUMBERTYPE => ValueType.Number,
+            TokenType.Power => ValueType.Int,
+            TokenType.Plus => ValueType.Int,
+            TokenType.Minus => ValueType.Int,
+            TokenType.NumberType => ValueType.Int,
 
             // Predicates
-            TokenType.PREDICATE => ValueType.Predicate,
+            TokenType.Predicate => ValueType.Predicate,
 
             // Booleans
-            TokenType.NOT => ValueType.Boolean,
-            TokenType.BOOLEAN => ValueType.Boolean,
-            TokenType.SINGLE => ValueType.Boolean,
+            TokenType.Not => ValueType.Bool,
+            TokenType.Bool => ValueType.Bool,
+            TokenType.Single => ValueType.Bool,
 
             // List Cards
-            TokenType.DECK => ValueType.ListCard,
-            TokenType.DECKOFPLAYER => ValueType.ListCard,
-            TokenType.GRAVEYARD => ValueType.ListCard,
-            TokenType.GRAVEYARDOFPLAYER => ValueType.ListCard,
-            TokenType.FIELD => ValueType.ListCard,
-            TokenType.FIELDOFPLAYER => ValueType.ListCard,
-            TokenType.HAND => ValueType.ListCard,
-            TokenType.HANDOFPLAYER => ValueType.ListCard,
-            TokenType.BOARD => ValueType.ListCard,
-            TokenType.FIND => ValueType.ListCard,
+            TokenType.Deck => ValueType.CardCollection,
+            TokenType.DeckOfPlayer => ValueType.CardCollection,
+            TokenType.GraveYard => ValueType.CardCollection,
+            TokenType.GraveYardOfPlayer => ValueType.CardCollection,
+            TokenType.Field => ValueType.CardCollection,
+            TokenType.FieldOfPlayer => ValueType.CardCollection,
+            TokenType.Hand => ValueType.CardCollection,
+            TokenType.HandOfPlayer => ValueType.CardCollection,
+            TokenType.Board => ValueType.CardCollection,
+            TokenType.Find => ValueType.CardCollection,
 
             // Cards
-            TokenType.POP => ValueType.Card,
+            TokenType.Pop => ValueType.Card,
 
             // Voids
-            TokenType.SENDBOTTOM => ValueType.Void,
-            TokenType.PUSH => ValueType.Void,
-            TokenType.SHUFFLE => ValueType.Void,
-            TokenType.ADD => ValueType.Void,
+            TokenType.SendBottom => ValueType.Void,
+            TokenType.Push => ValueType.Void,
+            TokenType.Shuffle => ValueType.Void,
+            TokenType.Add => ValueType.Void,
 
             _ => throw new ArgumentException("Unknown token type", nameof(token)),
         };
     }
 
-    public static Dictionary GetOperand()
+    
 }

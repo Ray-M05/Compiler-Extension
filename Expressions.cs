@@ -212,7 +212,7 @@ public class StringExpression : Atom
     }
     public override ValueType SemanticCheck(Scope scope)
     {
-        CheckType = ValueType.CheckType
+        CheckType = ValueType.CheckType;
     }
 }
    
