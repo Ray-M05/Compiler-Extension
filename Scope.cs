@@ -86,42 +86,4 @@ public enum ValueType
     Checked,
 }
 
-    public delegate ValueType ValueTypeDeterminer(Scope scope);
-
-    public Dictionary<TokenType, ValueTypeDeterminer> ValueTypers = new()
-    {
-        { TokenType.SendBottom, (scope) => CheckValueType(scope, ValueType.Card) },
-        { TokenType.Remove, (scope) => CheckValueType(scope, ValueType.Card) },
-        { TokenType.Push, (scope) => CheckValueType(scope, ValueType.Card) },
-        { TokenType.Add, (scope) => CheckValueType(scope, ValueType.Card) },
-        { TokenType.HandOfPlayer, (scope) => CheckValueType(scope, ValueType.Player) },
-        { TokenType.DeckOfPlayer, (scope) => CheckValueType(scope, ValueType.Player) },
-        { TokenType.GraveYardOfPlayer, (scope) => CheckValueType(scope, ValueType.Player) },
-        { TokenType.FieldOfPlayer, (scope) => CheckValueType(scope, ValueType.Player) },
-        { TokenType.RDecrement, (scope) => CheckValueType(scope, ValueType.Int) },
-        { TokenType.LDECREMENT, (scope) => CheckValueType(scope, ValueType.Int) },
-        { TokenType.RINCREMENT, (scope) => CheckValueType(scope, ValueType.Int) },
-        { TokenType.LINCREMENT, (scope) => CheckValueType(scope, ValueType.Int) },
-        { TokenType.Not, (scope) => CheckValueType(scope, ValueType.Bool) },
-        { TokenType.Find, (scope) =>
-            {
-                var predicateType = Operand.SemanticCheck(scope);
-                if (predicateType != ValueType.Predicate)
-                {
-                    throw new Exception("Semantic Error, Expected Predicate Type");
-                }
-                Operand.Type = ValueType.Predicate;
-                return ValueType.Predicate;
-            }
-        }
-    };
-
-    public ValueType CheckValueType(Scope scope, ValueType expectedValueType)
-    {
-        var actualValueType = Operator.SemanticCheck(scope);
-        if (actualValueType != expectedValueType)
-        {
-            throw new Exception($"Semantic Error, Expected {expectedValueType} Type");
-        }
-        return expectedValueType;
-    }
+    

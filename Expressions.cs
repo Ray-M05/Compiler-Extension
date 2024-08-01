@@ -1,16 +1,16 @@
- namespace Compiler;
+namespace Compiler;
 
- public abstract class Expression
- {
-    public string? printed;
-    public ValueType CheckType;
-    public virtual void Print(int indentLevel = 0)
-    {
-        Console.WriteLine(new string(' ', indentLevel * 4) + printed);
-    }
-    public abstract ValueType SemanticCheck(Scope scope);
-    public abstract object Evaluate();
- }
+public abstract class Expression
+{
+public string? printed;
+public ValueType CheckType;
+public virtual void Print(int indentLevel = 0)
+{
+    Console.WriteLine(new string(' ', indentLevel * 4) + printed);
+}
+public abstract ValueType CheckSemantic(Scope scope);
+public abstract object Evaluate();
+}
 public class ProgramExpression: Expression
 {
     public List<Expression> Instances;
@@ -24,11 +24,11 @@ public class ProgramExpression: Expression
     {
         throw new NotImplementedException();
     }
-    public override ValueType SemanticCheck(Scope scope)
+    public override ValueType CheckSemantic(Scope scope)
     {
         foreach(var instance in Instances)
         {
-            if(instance.SemanticCheck(scope)!= ValueType.Checked)
+            if(instance.CheckSemantic(scope)!= ValueType.Checked)
             {
                 Errors.List.Add(new CompilingError("Semantic Error at the Program",new Position()));
             }
@@ -100,7 +100,7 @@ public class Atom: Expression
         this.ValueForPrint = token.Meaning;
         Value= token;
     }
-    public override ValueType SemanticCheck(Scope scope)
+    public override ValueType CheckSemantic(Scope scope)
     {
         throw new NotImplementedException();
     }
@@ -119,6 +119,23 @@ public class UnaryExpression : Expression
     {
         Operand = operand;
         this.Operator = Operator;
+        ValueTypers = new()
+        {
+            { TokenType.SendBottom ,ValueType.Card },
+            { TokenType.Remove ,ValueType.Card },
+            { TokenType.Push ,ValueType.Card },
+            { TokenType.Add ,ValueType.Card },
+            { TokenType.HandOfPlayer ,ValueType.Player },
+            { TokenType.DeckOfPlayer ,ValueType.Player },
+            { TokenType.GraveYardOfPlayer ,ValueType.Player },
+            { TokenType.FieldOfPlayer ,ValueType.Player },
+            { TokenType.RDecrement ,ValueType.Int },
+            { TokenType.LDECREMENT ,ValueType.Int },
+            { TokenType.RINCREMENT ,ValueType.Int },
+            { TokenType.LINCREMENT ,ValueType.Int },
+            { TokenType.Not ,ValueType.Bool },
+            { TokenType.Find, ValueType.Predicate}
+        };
     }
     public override object Evaluate()
     {
@@ -133,38 +150,20 @@ public class UnaryExpression : Expression
         }
     }
 
-    public override ValueType SemanticCheck(Scope scope)
-    {
-        switch(Operator)
-        {
-            case TokenType.Not:
-                Operand.CheckType = Operand.SemanticCheck(scope);
-                if(Operand.CheckType == ValueType.Bool)
-                {
-                    return ValueType.Bool;
-                }
-                else
-                {
-                    Errors.List.Add(new CompilingError("Semantic Error at the Unary Expression",new Position()));
-                }
-                return ValueType.Bool;
-            case TokenType.Minus:
-            case TokenType.Plus:
-                Operand.CheckType = Operand.SemanticCheck(scope);
-                if(Operand.CheckType == ValueType.Int)
-                {
-                    return ValueType.Int;
-                }
-                else
-                {
-                    Errors.List.Add(new CompilingError("Semantic Error at the Unary Expression",new Position()));
-                }
-                break;
-            default:
-            throw new Exception("Unknown unary operator");
-        }
-
+    public Dictionary<TokenType, ValueType> ValueTypers;
         
+    public override ValueType CheckSemantic(Scope scope)
+    {
+        if(Operand!= null&& ValueTypers.ContainsKey(Operator))
+        {
+            ValueType type = ValueTypers[Operator];
+            if(Operand.CheckSemantic(scope)!= type)
+                Errors.List.Add(new CompilingError($"Expected {type} Type as an {Operator} argument",new Position()));
+            else
+                Operand.CheckType= type;
+        }
+        CheckType = Tools.GetType(Operator);
+        return CheckType;
     }
 }
 public class Number: Atom
@@ -177,6 +176,11 @@ public class Number: Atom
     {
         return Convert.ToDouble(Value.Meaning);
     }
+    public override ValueType CheckSemantic(Scope scope)
+    {
+        CheckType = ValueType.Int;
+        return CheckType;
+    }
 }
 public class BooleanLiteral : Atom
 {
@@ -187,6 +191,11 @@ public class BooleanLiteral : Atom
     public override object Evaluate()
     {
         return Convert.ToBoolean(Value.Meaning);
+    }
+    public override ValueType CheckSemantic(Scope scope)
+    {
+        CheckType = ValueType.Bool;
+        return CheckType;
     }
 }
 
@@ -210,9 +219,10 @@ public class StringExpression : Atom
     {
         return Value.Meaning.Substring(1,Value.Meaning.Length-2);
     }
-    public override ValueType SemanticCheck(Scope scope)
+    public override ValueType CheckSemantic(Scope scope)
     {
-        CheckType = ValueType.CheckType;
+        CheckType = ValueType.String;
+        return CheckType;
     }
 }
    

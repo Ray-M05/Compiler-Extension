@@ -65,7 +65,7 @@ public static class Tools
 
             // Booleans
             TokenType.Not => ValueType.Bool,
-            TokenType.Bool => ValueType.Bool,
+            TokenType.Bool => ValueType.Bool, //arreglar lexer de bool como token
             TokenType.Single => ValueType.Bool,
 
             // List Cards
