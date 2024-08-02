@@ -69,6 +69,7 @@ public class Lexer {
 
     { TokenType.NumberType, @"\bNumber\b" },
     { TokenType.StringType, @"\bString\b" },
+    {TokenType.Bool, @"\bBool\b"},
 
     //Booleans
     { TokenType.True, @"\btrue\b" },
@@ -99,6 +100,10 @@ public class Lexer {
     {TokenType.MoreEq, ">="},
     {TokenType.Less, "<"},
     {TokenType.More, ">"},
+    {TokenType.RIncrement, @"\+\+"},
+    {TokenType.LIncrement, @"\+\+"},
+    {TokenType.RDecrement, @"\-\-"},
+    {TokenType.LDecrement, @"\-\-"},
 
     //Symbols
     {TokenType.SpaceConcatenation, @"@@"},
@@ -198,6 +203,10 @@ public enum TokenType {
     Equal,
     LessEq,
     MoreEq,
+    RIncrement,
+    LIncrement,
+    RDecrement,
+    LDecrement,
     SpaceConcatenation,
     Concatenation,
     Assign,
@@ -209,6 +218,7 @@ public enum TokenType {
     RCurly,
     Int,
     String,
+    Bool,
     Id,
     Colon,
     Comma,

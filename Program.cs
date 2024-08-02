@@ -54,7 +54,7 @@
                 {
                     PrintExpressionTree(eff, indentLevel + 1);
                 }
-                foreach(CardInstance card in prognode.Cards)
+                foreach(CardInstance card in prognode.Instances)
                 {
                     PrintExpressionTree(card, indentLevel + 1);
                 }
@@ -113,7 +113,7 @@
                 }
             }
             else if(node is UnaryExpression unaryOperator)
-            PrintExpressionTree(unaryOperator.Operand, indentLevel + 1);
+            PrintExpressionTree(unaryOperator.Parameter, indentLevel + 1);
 
             else if(node is InstructionBlock instructionBlock)
             {

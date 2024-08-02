@@ -38,7 +38,7 @@ public static class Tools
         { TokenType.Point, 6 }
     };
     
-    public static ValueType GetType(TokenType token)
+    public static ValueType? GetType(TokenType token)
     {
         return token switch
         {
@@ -89,7 +89,7 @@ public static class Tools
             TokenType.Shuffle => ValueType.Void,
             TokenType.Add => ValueType.Void,
 
-            _ => throw new ArgumentException("Unknown token type", nameof(token)),
+            _ => null,
         };
     }
 

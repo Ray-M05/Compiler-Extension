@@ -3,12 +3,13 @@ namespace Compiler;
 public abstract class Expression
 {
 public string? printed;
-public ValueType CheckType;
+public ValueType? CheckType;
+public Scope SemScope;
 public virtual void Print(int indentLevel = 0)
 {
     Console.WriteLine(new string(' ', indentLevel * 4) + printed);
 }
-public abstract ValueType CheckSemantic(Scope scope);
+public abstract ValueType? CheckSemantic(Scope scope);
 public abstract object Evaluate();
 }
 public class ProgramExpression: Expression
@@ -24,7 +25,7 @@ public class ProgramExpression: Expression
     {
         throw new NotImplementedException();
     }
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
         foreach(var instance in Instances)
         {
@@ -100,7 +101,7 @@ public class Atom: Expression
         this.ValueForPrint = token.Meaning;
         Value= token;
     }
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
         throw new NotImplementedException();
     }
@@ -112,12 +113,13 @@ public class Atom: Expression
 
 public class UnaryExpression : Expression
 {
-    public Expression Operand { get; set; }
+    public Expression Parameter { get; set; }
     public TokenType Operator { get; set; }
 
+    public Dictionary<TokenType, ValueType> ValueTypers;
     public UnaryExpression(Expression operand, TokenType Operator)
     {
-        Operand = operand;
+        Parameter = operand;
         this.Operator = Operator;
         ValueTypers = new()
         {
@@ -130,9 +132,9 @@ public class UnaryExpression : Expression
             { TokenType.GraveYardOfPlayer ,ValueType.Player },
             { TokenType.FieldOfPlayer ,ValueType.Player },
             { TokenType.RDecrement ,ValueType.Int },
-            { TokenType.LDECREMENT ,ValueType.Int },
-            { TokenType.RINCREMENT ,ValueType.Int },
-            { TokenType.LINCREMENT ,ValueType.Int },
+            { TokenType.LDecrement ,ValueType.Int },
+            { TokenType.RIncrement ,ValueType.Int },
+            { TokenType.LIncrement ,ValueType.Int },
             { TokenType.Not ,ValueType.Bool },
             { TokenType.Find, ValueType.Predicate}
         };
@@ -142,25 +144,23 @@ public class UnaryExpression : Expression
         switch(Operator)
         {
             case TokenType.Not:
-                return !(bool)Operand.Evaluate();
+                return !(bool)Parameter.Evaluate();
             case TokenType.Minus:
-                return -1* (double)Operand.Evaluate();
+                return -1* (double)Parameter.Evaluate();
             default:
             throw new Exception("Unknown unary operator");
         }
     }
-
-    public Dictionary<TokenType, ValueType> ValueTypers;
         
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
-        if(Operand!= null&& ValueTypers.ContainsKey(Operator))
+        if(Parameter!= null&& ValueTypers.ContainsKey(Operator))
         {
             ValueType type = ValueTypers[Operator];
-            if(Operand.CheckSemantic(scope)!= type)
+            if(Parameter.CheckSemantic(scope)!= type)
                 Errors.List.Add(new CompilingError($"Expected {type} Type as an {Operator} argument",new Position()));
             else
-                Operand.CheckType= type;
+                Parameter.CheckType= type;
         }
         CheckType = Tools.GetType(Operator);
         return CheckType;
@@ -176,7 +176,7 @@ public class Number: Atom
     {
         return Convert.ToDouble(Value.Meaning);
     }
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
         CheckType = ValueType.Int;
         return CheckType;
@@ -192,7 +192,7 @@ public class BooleanLiteral : Atom
     {
         return Convert.ToBoolean(Value.Meaning);
     }
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
         CheckType = ValueType.Bool;
         return CheckType;
@@ -208,6 +208,29 @@ public class IdentifierExpression : Atom
         this.printed = "ID"; // O alguna otra forma de representar el identificador visualmente
     }
 
+    public override ValueType? CheckSemantic(Scope scope)
+    {
+        if(Tools.GetType(Value.Type) != null)
+        {
+            CheckType = Tools.GetType(Value.Type);
+            return CheckType;
+        }
+        else
+        {
+            ValueType? type;
+            if(scope!= null && scope.Find(this, out type))
+            {
+                CheckType= type;
+                return type;
+            }
+            else
+            {
+                CheckType= ValueType.Unassigned;
+                return ValueType.Unassigned;
+            }
+        }
+    }
+
 }
 public class StringExpression : Atom
 {
@@ -219,7 +242,7 @@ public class StringExpression : Atom
     {
         return Value.Meaning.Substring(1,Value.Meaning.Length-2);
     }
-    public override ValueType CheckSemantic(Scope scope)
+    public override ValueType? CheckSemantic(Scope scope)
     {
         CheckType = ValueType.String;
         return CheckType;
