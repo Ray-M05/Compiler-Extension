@@ -38,7 +38,7 @@ public static class Tools
         { TokenType.Point, 6 }
     };
     
-    public static ValueType? GetType(TokenType token)
+    public static ValueType? GetKeywordType(TokenType token)
     {
         return token switch
         {
@@ -93,7 +93,30 @@ public static class Tools
         };
     }
 
-    public static List<TokenType> GetPossibleMethods(ValueType value)
+    public static ValueType? GetOperatorType(TokenType token)
+    {
+        return token switch
+        {
+            TokenType.PlusEqual => ValueType.Int,
+            TokenType.MinusEqual => ValueType.Int,
+            TokenType.Plus => ValueType.Int,
+            TokenType.Minus => ValueType.Int,
+            TokenType.Multiply => ValueType.Int,
+            TokenType.Divide => ValueType.Int,
+            TokenType.Pow => ValueType.Int,
+            TokenType.LessEq => ValueType.Bool,
+            TokenType.MoreEq => ValueType.Bool,
+            TokenType.Less => ValueType.Bool,
+            TokenType.More => ValueType.Bool,
+            TokenType.And => ValueType.Bool,
+            TokenType.Or => ValueType.Bool,
+            TokenType.Concatenation => ValueType.String,
+            TokenType.SpaceConcatenation => ValueType.String,
+            _ => null,
+        };
+    }
+
+    public static List<TokenType> GetPossibleMethods(ValueType? value)
         {
             return value switch
             {
@@ -103,4 +126,12 @@ public static class Tools
                 _ => new(),
             };
         }
+
+    public static List<ValueType?> VariableTypes= new List<ValueType?>
+    {
+        ValueType.Int,
+        ValueType.Bool,
+        ValueType.Unassigned,
+        ValueType.String
+    };
 }

@@ -66,6 +66,7 @@ public class Lexer {
     { TokenType.Remove, @"\bRemove\b" },
     { TokenType.Shuffle, @"\bShuffle\b" },
     { TokenType.Owner, @"\bOwner\b" },
+    {TokenType.Index, @"\Index\b"}, //TODO:S
 
     { TokenType.NumberType, @"\bNumber\b" },
     { TokenType.StringType, @"\bString\b" },
@@ -258,6 +259,7 @@ public enum TokenType {
     HandOfPlayer,
     FieldOfPlayer,
     SendBottom,
+    Index,
     Pop,
     Add,
     Remove,

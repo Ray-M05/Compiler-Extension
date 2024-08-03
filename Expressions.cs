@@ -63,7 +63,103 @@ public class BinaryExpression : Expression
 
     public override ValueType? CheckSemantic(Scope scope)
     {
-        
+        if (Tools.GetOperatorType(Operator) != null)
+        {
+            var type = Tools.GetOperatorType(Operator);
+            if(Left.CheckSemantic(scope)  == type && Right.CheckSemantic(scope) == type)
+            {
+                Left.CheckType = type;
+                Right.CheckType =type;
+                return type;
+            }
+            else
+               Errors.List.Add(new CompilingError($"Expected {Tools.GetOperatorType(Operator)} Type as an {Operator} argument",new Position()));
+        }
+
+        else if (Operator == TokenType.Equal)
+        {
+            if(Left.CheckSemantic(scope) == Right.CheckSemantic(scope))
+            {
+                Left.CheckType = Left.CheckSemantic(scope);
+                Right.CheckType = Right.CheckSemantic(scope);
+                return ValueType.Bool;
+            }
+            else
+               Errors.List.Add(new CompilingError("Expected the same type in both sides of the equal operator",new Position()));
+        }
+
+        else if(Operator == TokenType.Index)
+        {
+            if(Left.CheckType!= ValueType.CardCollection)
+            {
+                if(Left.CheckSemantic(scope)== ValueType.CardCollection) //TODO: no se puede preguntar junto r y l?
+                {
+                    Left.CheckType= ValueType.CardCollection;
+                }
+                else
+                    Errors.List.Add(new CompilingError("Expected a CardCollection as a left argument of the Index operator",new Position()));
+            }
+            if(Right.CheckSemantic(scope)== ValueType.Int)
+            {
+                Right.CheckType= ValueType.Int;
+                return ValueType.Card;
+            }
+            else
+                Errors.List.Add(new CompilingError("Expected an Int as a right argument of the Index operator",new Position()));
+        }
+
+        else if(Operator == TokenType.Colon)
+        {
+            Right.CheckType= Right.CheckSemantic(scope);
+            ValueType? tempforOut;
+            if(scope == null||!scope.Find(Left, out tempforOut) || !scope.WithoutReps) //TODO: creo que habia un problema en telg ns is es ||
+            {
+                Left.CheckType= Left.CheckSemantic(scope);
+                if(Tools.VariableTypes.Contains(Left.CheckType))
+                { //TODO: || o &&
+                    if(Left.CheckType== Right.CheckType || Left.CheckType== ValueType.Unassigned)
+                    {
+                        Left.CheckType= Right.CheckType;
+                        scope?.AddVar(Left, Right);
+                    }
+                    else 
+                        Errors.List.Add(new CompilingError("Expected the same type in both sides of the equal operator",new Position()));
+                }
+                else 
+                    Errors.List.Add(new CompilingError("Expected a variable type in the left side of the equal operator",new Position()));
+            }
+            else
+                Errors.List.Add(new CompilingError("Variable already declared",new Position()));
+
+            CheckType= Right.CheckType;
+            return Right.CheckType;
+        }
+
+        else if(Operator == TokenType.Point)
+        {
+            Left.CheckType = Left.CheckSemantic(scope);
+            if(Left.CheckType != ValueType.Null && Right is Atom right && Tools.GetPossibleMethods(Left.CheckType).Contains(right.Value.Type))
+            {
+                Left.CheckType= right.CheckSemantic(scope);
+                Right.CheckType= Left.CheckType;
+                return Tools.GetKeywordType(right.Value.Type);
+            }
+            else if(Left.CheckType != ValueType.Null && Right is BinaryExpression binary && binary.Operator== TokenType.Index )
+            {
+                if(binary.Left is Atom left && Tools.GetPossibleMethods(Left.CheckType).Contains(left.Value.Type))
+                {
+                    binary.Left.CheckType= Tools.GetKeywordType(left.Value.Type);
+                    Left.CheckType = binary.CheckSemantic(scope);
+                    return Left.CheckType; 
+                }
+                else
+                    Errors.List.Add(new CompilingError("Expected a valid method",new Position()));
+            }
+        }
+
+        else 
+           Errors.List.Add(new CompilingError("Unknown operator",new Position()));
+            return null;
     }
     public override object Evaluate()
     {
@@ -185,7 +281,7 @@ public class UnaryExpression : Expression
             else
                 Parameter.CheckType= type;
         }
-        CheckType = Tools.GetType(Operator);
+        CheckType = Tools.GetKeywordType(Operator);
         return CheckType;
     }
 }
@@ -233,9 +329,9 @@ public class IdentifierExpression : Atom
 
     public override ValueType? CheckSemantic(Scope scope)
     {
-        if(Tools.GetType(Value.Type) != null)
+        if(Tools.GetKeywordType(Value.Type) != null)
         {
-            CheckType = Tools.GetType(Value.Type);
+            CheckType = Tools.GetKeywordType(Value.Type);
             return CheckType;
         }
         else
