@@ -24,12 +24,9 @@ public class EffectInstance: Expression
         SemScope.WithoutReps= false;
 
 
-        if(Action!= null)
-            Action.CheckSemantic(SemScope);
-        else
-        {
+        if(!(Action!= null && Action.CheckSemantic(SemScope) == ValueType.Checked))
             Errors.List.Add(new CompilingError("Effect must have an action", new Position()));
-        }
+
         return ValueType.Checked;
     }
     public override object Evaluate()
@@ -46,10 +43,7 @@ public class EffectInstance: Expression
         SemScope = new Scope(scope);
         foreach(var instruction in Instructions)
         {
-            if(instruction.CheckSemantic(SemScope)!= ValueType.Checked)
-            {
-                Errors.List.Add(new CompilingError("Instruction Block must have valid instructions", new Position()));
-            }
+            instruction.CheckSemantic(SemScope);
         }
         return ValueType.Checked;
     }
@@ -74,6 +68,7 @@ public class Action: Expression
         SemScope = new Scope(scope);
         if(Targets!= null&& Targets.CheckSemantic(scope)== ValueType.CardCollection)
         {
+            SemScope.AddVar(Targets);
             Targets.CheckType= ValueType.CardCollection;
         }
         else
@@ -83,6 +78,7 @@ public class Action: Expression
         
         if(Context!= null&& Context.CheckSemantic(scope)== ValueType.Context)
         {
+            SemScope.AddVar(Context);
             Context.CheckType= ValueType.Context;
         }
         else

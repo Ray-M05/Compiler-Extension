@@ -51,6 +51,20 @@ public class BinaryExpression : Expression
         Operator = Op;
         this.printed = Op.ToString();
     }
+
+    public override bool Equals(object? obj)
+    {
+        if(obj is BinaryExpression bin)
+        {
+            return bin.Left.Equals(Left) && bin.Right.Equals(Right) && bin.Operator == Operator;
+        }
+        return false;
+    }
+
+    public override ValueType? CheckSemantic(Scope scope)
+    {
+        
+    }
     public override object Evaluate()
     {
         switch(Operator)
@@ -100,6 +114,15 @@ public class Atom: Expression
     {
         this.ValueForPrint = token.Meaning;
         Value= token;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if(obj is Atom atom)
+        {
+            return atom.Value.Equals(Value);
+        }
+        return false;
     }
     public override ValueType? CheckSemantic(Scope scope)
     {

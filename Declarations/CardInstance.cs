@@ -12,26 +12,26 @@ public class CardInstance: Expression
     {
         SemScope = new Scope(scope);
         if(Name!= null)
-        Name.CheckSemantic(scope);
+            Name.CheckSemantic(scope);
         else
         {
             Errors.List.Add(new CompilingError("Card must have a name", new Position()));
         }
         if(Type!= null)
-        Type.CheckSemantic(scope);
+            Type.CheckSemantic(scope);
         else
         {
             Errors.List.Add(new CompilingError("Card must have a type", new Position()));
         }
         if(Faction!= null)
-        Faction.CheckSemantic(scope);
+            Faction.CheckSemantic(scope);
         else
         {
             Errors.List.Add(new CompilingError("Card must have a faction", new Position()));
         }     
         //FIXME:arrgelar el parser para que sea opcional
         if(Power!= null)
-        Power.CheckSemantic(scope);
+            Power.CheckSemantic(scope);
         
         //FIXME:
         if(Range!= null)
@@ -61,7 +61,7 @@ public class OnActivation: Expression
 
     public override ValueType? CheckSemantic(Scope scope)
     {
-        SemScope = new Scope(scope);
+        if(Effects!= null)
         foreach(var effect in Effects)
         {
             effect.CheckSemantic(SemScope);
@@ -83,6 +83,35 @@ public class EffectParam: Expression
     public List<Expression>? Effect = new();
     public Selector? Selector;
     public EffectParam? PostAction;
+
+    public override ValueType? CheckSemantic(Scope scope)
+    {
+        SemScope = new Scope(scope);
+        SemScope.WithoutReps= true;
+        if(Effect!= null)
+        foreach(var effect in Effect)
+        {
+            effect.CheckSemantic(SemScope);
+        }
+        else
+        {
+            Errors.List.Add(new CompilingError("Effect must have a name", new Position()));
+        }
+        SemScope.WithoutReps= false;
+        if(!(Selector!= null && Selector.CheckSemantic(SemScope) == ValueType.Checked))
+        {
+            Errors.List.Add(new CompilingError("Effect must have a selector", new Position()));
+        }
+        
+        if(PostAction!= null)
+        {
+            if(!(PostAction.CheckSemantic(SemScope) == ValueType.Checked))
+            {
+                Errors.List.Add(new CompilingError("Effect must have a valid post action", new Position()));
+            }
+        }
+        return ValueType.Checked;
+    }
 
     public override object Evaluate()
     {
@@ -119,7 +148,7 @@ public class Selector: Expression
         {
             Errors.List.Add(new CompilingError("Selector must have a single", new Position()));
         }
-        if(!(Predicate!= null && Predicate.CheckSemantic(scope) == ValueType.Checked))
+        if(!(Predicate!= null && Predicate.CheckSemantic(scope) == ValueType.Predicate))
         Errors.List.Add(new CompilingError("Selector must have a predicate", new Position()));
         
         return ValueType.Checked;
@@ -163,7 +192,7 @@ public class Predicate: Expression
         {
             Errors.List.Add(new CompilingError("Predicate must have a valid condition", new Position()));
         }
-    return ValueType.Checked;
+    return ValueType.Predicate;
         
     }
     public override object Evaluate()

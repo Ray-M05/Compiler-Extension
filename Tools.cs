@@ -93,5 +93,14 @@ public static class Tools
         };
     }
 
-    
+    public static List<TokenType> GetPossibleMethods(ValueType value)
+        {
+            return value switch
+            {
+                ValueType.Card => new[] { TokenType.Name, TokenType.Owner, TokenType.Power, TokenType.Faction, TokenType.Range, TokenType.Type }.ToList(),
+                ValueType.Context => new[] { TokenType.Find, TokenType.Deck, TokenType.DeckOfPlayer, TokenType.GraveYard, TokenType.GraveYardOfPlayer, TokenType.Field, TokenType.FieldOfPlayer, TokenType.Hand, TokenType.HandOfPlayer, TokenType.Board, TokenType.TriggerPlayer }.ToList(),
+                ValueType.CardCollection => new[] { TokenType.Push, TokenType.SendBottom, TokenType.Pop, TokenType.Shuffle }.ToList(),
+                _ => new(),
+            };
+        }
 }
