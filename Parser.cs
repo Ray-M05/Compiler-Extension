@@ -359,16 +359,10 @@ public class Parser
                 right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
             }
-            else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
-            {
-                position++;
-                right = new UnaryExpression(ParseExpression(), token);
-                Binary= new BinaryExpression(left, right,token.Type);
-            }
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new UnaryExpression(ParseExpression(), token);
+                right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         
@@ -435,7 +429,7 @@ public class Parser
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new UnaryExpression(ParseExpression(), token);
+                right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         

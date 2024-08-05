@@ -73,7 +73,7 @@ public class BinaryExpression : Expression
             {
                 Left.CheckType = type;
                 Right.CheckType =type;
-                if(Tools.GetPrecedence[Operator] == 2)
+                if(Tools.GetPrecedence.ContainsKey(Operator) && Tools.GetPrecedence[Operator] == 2)
                     return ValueType.Bool;
                 else
                     return type;

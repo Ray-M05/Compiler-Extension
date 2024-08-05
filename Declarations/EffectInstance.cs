@@ -24,7 +24,7 @@ public class EffectInstance: Expression
         SemScope.WithoutReps= false;
 
 
-        if(!(Action!= null && Action.CheckSemantic(SemScope) == ValueType.Checked))
+        if(Action!= null && Action.CheckSemantic(SemScope) != ValueType.Checked)
             Errors.List.Add(new CompilingError("Effect must have an action", new Position()));
 
         return ValueType.Checked;
@@ -43,7 +43,7 @@ public class EffectInstance: Expression
         SemScope = new Scope(scope);
         foreach(var instruction in Instructions)
         {
-            instruction.CheckSemantic(SemScope);
+            ValueType? type = instruction.CheckSemantic(SemScope);
         }
         return ValueType.Checked;
     }
@@ -143,7 +143,7 @@ public class ForExpression: Expression
             Errors.List.Add(new CompilingError("For must have a collection", new Position()));
         }
         
-        if(!(Instructions!= null && Instructions.CheckSemantic(SemScope)!= ValueType.Checked))
+        if(Instructions!= null && Instructions.CheckSemantic(SemScope)!= ValueType.Checked)
         {
             Errors.List.Add(new CompilingError("For must have valid instructions", new Position()));
         }
@@ -176,7 +176,7 @@ public class WhileExpression: Expression
             Errors.List.Add(new CompilingError("While must have a valid condition", new Position()));
         }
         
-        if(!(Instructions!= null && Instructions.CheckSemantic(SemScope)== ValueType.Checked))
+        if(Instructions!= null && Instructions.CheckSemantic(SemScope)!= ValueType.Checked)
         {
             Errors.List.Add(new CompilingError("While must have valid instructions", new Position()));
         }

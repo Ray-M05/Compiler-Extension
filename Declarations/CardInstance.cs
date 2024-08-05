@@ -101,7 +101,7 @@ public class EffectParam: Expression
             Errors.List.Add(new CompilingError("Effect must have a name", new Position()));
         }
         SemScope.WithoutReps= false;
-        if(!(Selector!= null && Selector.CheckSemantic(SemScope) == ValueType.Checked))
+        if(Selector!= null && Selector.CheckSemantic(SemScope) != ValueType.Checked)
         {
             Errors.List.Add(new CompilingError("Effect must have a selector", new Position()));
         }
@@ -151,7 +151,7 @@ public class Selector: Expression
         {
             Errors.List.Add(new CompilingError("Selector must have a single", new Position()));
         }
-        if(!(Predicate!= null && Predicate.CheckSemantic(scope) == ValueType.Predicate))
+        if(Predicate!= null && Predicate.CheckSemantic(scope) != ValueType.Predicate)
         Errors.List.Add(new CompilingError("Selector must have a predicate", new Position()));
         
         return ValueType.Checked;
