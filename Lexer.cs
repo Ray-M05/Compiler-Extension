@@ -66,7 +66,7 @@ public class Lexer {
     { TokenType.Remove, @"\bRemove\b" },
     { TokenType.Shuffle, @"\bShuffle\b" },
     { TokenType.Owner, @"\bOwner\b" },
-    {TokenType.Index, @"\Index\b"}, //TODO:S
+    {TokenType.Index, @"\bIndex\b"}, //TODO:S
 
     { TokenType.NumberType, @"\bNumber\b" },
     { TokenType.StringType, @"\bString\b" },

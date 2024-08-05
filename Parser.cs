@@ -217,8 +217,40 @@ public class Parser
         }
         return left;
     }
+
+    private Expression IncrementsorIndexer (bool increment, bool index, Expression returned)
+    {
+        if(increment&&(tokens[position].Type == TokenType.Increment || tokens[position].Type== TokenType.Decrement))
+        {//Incrementos a la derecha
+            if(tokens[position].Type== TokenType.Increment)
+                tokens[position].Type= TokenType.RIncrement;
+            else
+                tokens[position].Type= TokenType.RDecrement;
+            position++;
+            return new UnaryExpression(returned, tokens[position-1]);
+        }
+        else if(index &&tokens[position].Type== TokenType.LBracket)
+        {//Indexado
+            Token token = tokens[position];
+            if(tokens[++position].Type== TokenType.RBracket)
+            {
+                throw new Exception($"Invalid Token: {tokens[position]}. Expected an Expression to index");
+            }
+            Expression Argument= ParseExpression();
+            if(tokens[position].Type== TokenType.RBracket)
+            {
+                position++;
+                return new BinaryExpression(returned, Argument, TokenType.Index);
+            }
+            else
+                throw new Exception($"Invalid Token: {tokens[position]}. Expected a Right Bracket to index");
+
+        }
+        return returned;
+    }
     public Expression ParsePrimaryExpression()
     {
+        Expression returned= null;
         if (position >= tokens.Count)
         throw new Exception("Unexpected end of input");
         if (LookAhead(tokens[position].Type, TokenType.LParen))
@@ -232,6 +264,17 @@ public class Parser
             position++;
             return expr;
         }
+        else if (tokens[position].Type == TokenType.Increment|| tokens[position].Type == TokenType.Decrement)
+        {
+            if(tokens[position].Type== TokenType.Increment)
+                tokens[position].Type= TokenType.LIncrement;
+            else
+                tokens[position].Type= TokenType.LDecrement;
+            Token token= tokens[position];
+            position++;
+            Expression expr = ParsePrimaryExpression();
+            returned= new UnaryExpression(expr, token);
+        }
         else if (LookAhead(tokens[position].Type, TokenType.False)|| LookAhead(tokens[position].Type, TokenType.True))
         {
             position++;
@@ -243,15 +286,12 @@ public class Parser
                  LookAhead(tokens[position].Type, TokenType.Single)||LookAhead(tokens[position].Type, TokenType.Owner)||
                  LookAhead(tokens[position].Type, TokenType.Deck)||LookAhead(tokens[position].Type, TokenType.GraveYard)||
                  LookAhead(tokens[position].Type, TokenType.Field)||LookAhead(tokens[position].Type, TokenType.Board)||
-                 LookAhead(tokens[position].Type, TokenType.Hand))
+                 LookAhead(tokens[position].Type, TokenType.Hand)|| 
+                 //FIXME: id here, there's nothing to fix
+                 LookAhead(tokens[position].Type, TokenType.Id))
         {
             position++; 
-            return new IdentifierExpression(tokens[position - 1]);
-        }
-        else if (LookAhead(tokens[position].Type, TokenType.Id))
-        {
-            position++; 
-            return new IdentifierExpression(tokens[position - 1]);
+            return IncrementsorIndexer(true,true,new IdentifierExpression(tokens[position - 1]));
         }
         else if (LookAhead(tokens[position].Type, TokenType.String))
         {
@@ -263,9 +303,9 @@ public class Parser
             position++;
             return new Number(tokens[position - 1]);
         }
-        else if (LookAhead(tokens[position].Type, TokenType.Not)||LookAhead(tokens[position].Type, TokenType.Plus)||LookAhead(tokens[position].Type, TokenType.Minus) && (position == 0 || !LookAhead(tokens[position - 1].Type, TokenType.Int) && !LookAhead(tokens[position - 1].Type, TokenType.Id)))
+        else if (LookAhead(tokens[position].Type, TokenType.Not)||LookAhead(tokens[position].Type, TokenType.Plus)||LookAhead(tokens[position].Type, TokenType.Minus))
         {
-            TokenType unary = tokens[position].Type;
+            Token unary = tokens[position];
             position++;
             Expression operand = ParsePrimaryExpression();
             return new UnaryExpression(operand, unary);
@@ -276,22 +316,29 @@ public class Parser
             if(LookAhead(tokens[++position].Type, TokenType.LParen) && LookAhead(tokens[++position].Type, TokenType.RParen))
             {
                 position++;
-                return new UnaryExpression(null, token.Type);
+                return new UnaryExpression(null, token);
             }
+            else
+            throw new Exception($"Invalid Token: {tokens[position]}. Expected a none parameters method sintax");
         }
         else if (LookAhead(tokens[position].Type, TokenType.Push) ||LookAhead(tokens[position].Type, TokenType.SendBottom)
                 ||LookAhead(tokens[position].Type, TokenType.Remove)||LookAhead(tokens[position].Type, TokenType.HandOfPlayer)
                 ||LookAhead(tokens[position].Type, TokenType.DeckOfPlayer)||LookAhead(tokens[position].Type, TokenType.Add)
-                ||LookAhead(tokens[position].Type, TokenType.FieldOfPlayer)||LookAhead(tokens[position].Type, TokenType.GraveYardOfPlayer))
+                ||LookAhead(tokens[position].Type, TokenType.FieldOfPlayer)||LookAhead(tokens[position].Type, TokenType.GraveYardOfPlayer)
+                ||LookAhead(tokens[position].Type, TokenType.Find))
                 {
                     Token token= tokens[position];
                     if(LookAhead(tokens[++position].Type, TokenType.LParen))
                     {
                         position++;
-                        Expression argument = ParseExpression();
+                        Expression argument;
+                        if(!LookAhead(tokens[position].Type, TokenType.Find))
+                            argument = ParseExpression();
+                        else
+                            argument = ParsePredicate(true);
                         if(LookAhead(tokens[position++].Type, TokenType.RParen))
                         {
-                            return new UnaryExpression(argument, token.Type);
+                            return new UnaryExpression(argument, token);
                         }
                     }
                 }
@@ -315,13 +362,13 @@ public class Parser
             else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
             {
                 position++;
-                right = new UnaryExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new UnaryExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         
@@ -385,16 +432,10 @@ public class Parser
                 right = ParseExpression();
                 Binary= new BinaryExpression(left, right,token.Type);
             }
-            else if(LookAhead(token.Type, TokenType.Increment)|| LookAhead(token.Type, TokenType.Decrement))
-            {
-                position++;
-                right = new UnaryExpression(ParseExpression(), token.Type);
-                Binary= new BinaryExpression(left, right,token.Type);
-            }
             else if(LookAhead(token.Type, TokenType.PlusEqual)|| LookAhead(token.Type, TokenType.MinusEqual))
             {
                 position++;
-                right = new UnaryExpression(ParseExpression(), token.Type);
+                right = new UnaryExpression(ParseExpression(), token);
                 Binary= new BinaryExpression(left, right,token.Type);
             }
         
@@ -563,11 +604,14 @@ private OnActivation ParseOnActivation()
                 Action.Context = new IdentifierExpression(tokens[position-1]);
 
                 if(LookAhead(tokens[position++].Type, TokenType.RParen) &&
-                   LookAhead(tokens[position++].Type, TokenType.Arrow) &&
-                   LookAhead(tokens[position++].Type, TokenType.LCurly))
-                {
-                    Action.Instructions= ParseInstructionBlock();
-                }
+                   LookAhead(tokens[position++].Type, TokenType.Arrow))
+                    if( LookAhead(tokens[position].Type, TokenType.LCurly) )
+                    {
+                        position++;
+                        Action.Instructions= ParseInstructionBlock();
+                    }
+                    else
+                    Action.Instructions= ParseInstructionBlock(true);
         }
         else
         Errors.List.Add(new CompilingError("Invalid Action declaration",tokens[position].PositionError));
@@ -684,7 +728,7 @@ private OnActivation ParseOnActivation()
         return selector;
     }
 
-    public Predicate ParsePredicate()
+    public Predicate ParsePredicate(bool frommethod = false)
     {
         if(LookAhead(tokens[++position].Type, TokenType.Colon))
         {
@@ -695,14 +739,15 @@ private OnActivation ParseOnActivation()
                 {
                     position++;
                     predicate.Condition= ParseExpression();
+                    if(!frommethod)
                     if(LookAhead(tokens[position].Type, TokenType.Comma)|| LookAhead(tokens[position].Type, TokenType.RCurly))
                     {
                         if(LookAhead(tokens[position].Type, TokenType.Comma))
                         position++;
-                        return predicate;
                     }
                     else
                         Errors.List.Add(new CompilingError("Expected Comma",tokens[position].PositionError));
+                    return predicate;
                 }
                 else
                     Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));

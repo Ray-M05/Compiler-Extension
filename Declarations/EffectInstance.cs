@@ -66,7 +66,7 @@ public class Action: Expression
     public override ValueType? CheckSemantic(Scope scope)
     {
         SemScope = new Scope(scope);
-        if(Targets!= null&& Targets.CheckSemantic(scope)== ValueType.CardCollection)
+        if(Targets!= null)
         {
             SemScope.AddVar(Targets);
             Targets.CheckType= ValueType.CardCollection;
@@ -76,7 +76,7 @@ public class Action: Expression
             Errors.List.Add(new CompilingError("Action must have a valid target", new Position()));
         }
         
-        if(Context!= null&& Context.CheckSemantic(scope)== ValueType.Context)
+        if(Context!= null)
         {
             SemScope.AddVar(Context);
             Context.CheckType= ValueType.Context;
@@ -143,7 +143,7 @@ public class ForExpression: Expression
             Errors.List.Add(new CompilingError("For must have a collection", new Position()));
         }
         
-        if(!(Instructions!= null && Instructions.CheckSemantic(SemScope)== ValueType.Checked))
+        if(!(Instructions!= null && Instructions.CheckSemantic(SemScope)!= ValueType.Checked))
         {
             Errors.List.Add(new CompilingError("For must have valid instructions", new Position()));
         }

@@ -19,4 +19,11 @@
     public static class Errors
     {
         public static List<CompilingError> List= new List<CompilingError>();
+        public static void PrintAll()
+        {
+            foreach (CompilingError item in List)
+            {
+                Console.WriteLine(item);
+            }
+        }
     }

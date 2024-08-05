@@ -58,6 +58,10 @@ public static class Tools
             TokenType.Power => ValueType.Int,
             TokenType.Plus => ValueType.Int,
             TokenType.Minus => ValueType.Int,
+            TokenType.RIncrement => ValueType.Int,
+            TokenType.LIncrement => ValueType.Int,
+            TokenType.RDecrement => ValueType.Int,
+            TokenType.LDecrement => ValueType.Int,
             TokenType.NumberType => ValueType.Int,
 
             // Predicates
@@ -88,6 +92,7 @@ public static class Tools
             TokenType.Push => ValueType.Void,
             TokenType.Shuffle => ValueType.Void,
             TokenType.Add => ValueType.Void,
+            TokenType.Remove => ValueType.Void,
 
             _ => null,
         };
@@ -104,10 +109,10 @@ public static class Tools
             TokenType.Multiply => ValueType.Int,
             TokenType.Divide => ValueType.Int,
             TokenType.Pow => ValueType.Int,
-            TokenType.LessEq => ValueType.Bool,
-            TokenType.MoreEq => ValueType.Bool,
-            TokenType.Less => ValueType.Bool,
-            TokenType.More => ValueType.Bool,
+            TokenType.LessEq => ValueType.Int,
+            TokenType.MoreEq => ValueType.Int,
+            TokenType.Less => ValueType.Int,
+            TokenType.More => ValueType.Int,
             TokenType.And => ValueType.Bool,
             TokenType.Or => ValueType.Bool,
             TokenType.Concatenation => ValueType.String,
@@ -122,7 +127,7 @@ public static class Tools
             {
                 ValueType.Card => new[] { TokenType.Name, TokenType.Owner, TokenType.Power, TokenType.Faction, TokenType.Range, TokenType.Type }.ToList(),
                 ValueType.Context => new[] { TokenType.Find, TokenType.Deck, TokenType.DeckOfPlayer, TokenType.GraveYard, TokenType.GraveYardOfPlayer, TokenType.Field, TokenType.FieldOfPlayer, TokenType.Hand, TokenType.HandOfPlayer, TokenType.Board, TokenType.TriggerPlayer }.ToList(),
-                ValueType.CardCollection => new[] { TokenType.Push, TokenType.SendBottom, TokenType.Pop, TokenType.Shuffle }.ToList(),
+                ValueType.CardCollection => new[] { TokenType.Push, TokenType.SendBottom, TokenType.Pop, TokenType.Shuffle, TokenType.Add, TokenType.Remove }.ToList(),
                 _ => new(),
             };
         }

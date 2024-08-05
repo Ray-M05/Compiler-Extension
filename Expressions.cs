@@ -7,7 +7,10 @@ public ValueType? CheckType;
 public Scope SemScope;
 public virtual void Print(int indentLevel = 0)
 {
-    Console.WriteLine(new string(' ', indentLevel * 4) + printed);
+    if(CheckType!= null)
+    Console.WriteLine(new string(' ', indentLevel * 4) + "Token " + printed+ "--- Type"+ CheckType);
+    else
+    Console.WriteLine(new string(' ', indentLevel * 4) + "Token " + printed);
 }
 public abstract ValueType? CheckSemantic(Scope scope);
 public abstract object Evaluate();
@@ -70,7 +73,10 @@ public class BinaryExpression : Expression
             {
                 Left.CheckType = type;
                 Right.CheckType =type;
-                return type;
+                if(Tools.GetPrecedence[Operator] == 2)
+                    return ValueType.Bool;
+                else
+                    return type;
             }
             else
                Errors.List.Add(new CompilingError($"Expected {Tools.GetOperatorType(Operator)} Type as an {Operator} argument",new Position()));
@@ -78,10 +84,10 @@ public class BinaryExpression : Expression
 
         else if (Operator == TokenType.Equal)
         {
-            if(Left.CheckSemantic(scope) == Right.CheckSemantic(scope))
+            Left.CheckType = Left.CheckSemantic(scope);
+            Right.CheckType = Right.CheckSemantic(scope);
+            if(Left.CheckType == Right.CheckType)
             {
-                Left.CheckType = Left.CheckSemantic(scope);
-                Right.CheckType = Right.CheckSemantic(scope);
                 return ValueType.Bool;
             }
             else
@@ -108,7 +114,7 @@ public class BinaryExpression : Expression
                 Errors.List.Add(new CompilingError("Expected an Int as a right argument of the Index operator",new Position()));
         }
 
-        else if(Operator == TokenType.Colon)
+        else if(Operator == TokenType.Colon || Operator== TokenType.Assign)
         {
             Right.CheckType= Right.CheckSemantic(scope);
             ValueType? tempforOut;
@@ -116,8 +122,8 @@ public class BinaryExpression : Expression
             {
                 Left.CheckType= Left.CheckSemantic(scope);
                 if(Tools.VariableTypes.Contains(Left.CheckType))
-                { //TODO: || o &&
-                    if(Left.CheckType== Right.CheckType || Left.CheckType== ValueType.Unassigned)
+                { 
+                    if(Left.CheckType == Right.CheckType || Left.CheckType== ValueType.Unassigned)
                     {
                         Left.CheckType= Right.CheckType;
                         scope?.AddVar(Left, Right);
@@ -140,8 +146,7 @@ public class BinaryExpression : Expression
             Left.CheckType = Left.CheckSemantic(scope);
             if(Left.CheckType != ValueType.Null && Right is Atom right && Tools.GetPossibleMethods(Left.CheckType).Contains(right.Value.Type))
             {
-                Left.CheckType= right.CheckSemantic(scope);
-                Right.CheckType= Left.CheckType;
+                Right.CheckType= right.CheckSemantic(scope);
                 return Tools.GetKeywordType(right.Value.Type);
             }
             else if(Left.CheckType != ValueType.Null && Right is BinaryExpression binary && binary.Operator== TokenType.Index )
@@ -149,8 +154,7 @@ public class BinaryExpression : Expression
                 if(binary.Left is Atom left && Tools.GetPossibleMethods(Left.CheckType).Contains(left.Value.Type))
                 {
                     binary.Left.CheckType= Tools.GetKeywordType(left.Value.Type);
-                    Left.CheckType = binary.CheckSemantic(scope);
-                    return Left.CheckType; 
+                    return binary.CheckSemantic(scope);
                 }
                 else
                     Errors.List.Add(new CompilingError("Expected a valid method",new Position()));
@@ -216,7 +220,7 @@ public class Atom: Expression
     {
         if(obj is Atom atom)
         {
-            return atom.Value.Equals(Value);
+            return atom.Value.Meaning==Value.Meaning;
         }
         return false;
     }
@@ -230,16 +234,17 @@ public class Atom: Expression
     }
 }
 
-public class UnaryExpression : Expression
+public class UnaryExpression : Atom
 {
     public Expression Parameter { get; set; }
     public TokenType Operator { get; set; }
 
     public Dictionary<TokenType, ValueType> ValueTypers;
-    public UnaryExpression(Expression operand, TokenType Operator)
+    public UnaryExpression(Expression operand, Token Operator):base(Operator)
     {
         Parameter = operand;
-        this.Operator = Operator;
+        this.Operator = Operator.Type;
+        printed= Operator.Type.ToString();
         ValueTypers = new()
         {
             { TokenType.SendBottom ,ValueType.Card },

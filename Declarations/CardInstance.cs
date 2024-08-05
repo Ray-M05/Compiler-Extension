@@ -1,6 +1,7 @@
 namespace Compiler;
 public class CardInstance: Expression
 {
+    
     public Expression? Name {get; set;}
     public Expression? Type {get; set;}
     public Expression? Faction {get; set;}
@@ -10,6 +11,7 @@ public class CardInstance: Expression
 
     public override ValueType? CheckSemantic(Scope scope)
     {
+        printed= "Card";
         SemScope = new Scope(scope);
         if(Name!= null)
             Name.CheckSemantic(scope);
@@ -61,6 +63,7 @@ public class OnActivation: Expression
 
     public override ValueType? CheckSemantic(Scope scope)
     {
+        printed= "OnActivation";
         if(Effects!= null)
         foreach(var effect in Effects)
         {

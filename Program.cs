@@ -17,12 +17,12 @@
                 Parser parser = new(tokens);
                 Expression root = parser.Parse();
 
-                foreach (CompilingError item in Errors.List)
-                {
-                    Console.WriteLine(item);
-                }
+                Errors.PrintAll();
                 Console.WriteLine(parser.position);
                 PrintExpressionTree(root);
+                root.CheckSemantic(null);
+                PrintExpressionTree(root);
+                Errors.PrintAll();
             }
             catch (Exception e)
             {
@@ -50,13 +50,9 @@
             }
             else if (node is ProgramExpression prognode)
             {
-                foreach(EffectInstance eff in prognode.Instances)
+                foreach(Expression eff in prognode.Instances)
                 {
                     PrintExpressionTree(eff, indentLevel + 1);
-                }
-                foreach(CardInstance card in prognode.Instances)
-                {
-                    PrintExpressionTree(card, indentLevel + 1);
                 }
             }
             else if (node is EffectInstance effNode)
