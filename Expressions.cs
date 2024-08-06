@@ -118,7 +118,7 @@ public class BinaryExpression : Expression
         {
             Right.CheckType= Right.CheckSemantic(scope);
             ValueType? tempforOut;
-            if(scope == null||!scope.Find(Left, out tempforOut) || !scope.WithoutReps) //TODO: creo que habia un problema en telg ns is es ||
+            if(scope == null||!scope.Find(Left, out tempforOut) || !scope.WithoutReps) 
             {
                 Left.CheckType= Left.CheckSemantic(scope);
                 if(Tools.VariableTypes.Contains(Left.CheckType))

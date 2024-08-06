@@ -187,7 +187,7 @@ public class Predicate: Expression
         {
             Errors.List.Add(new CompilingError("Predicate most have a unit or unit already declarated", new Position()));
         }
-        if(Condition!= null && Condition.CheckSemantic(scope)== ValueType.Bool)
+        if(Condition!= null && Condition.CheckSemantic(SemScope)== ValueType.Bool)
         {
         Condition.CheckType = ValueType.Bool;
         }
