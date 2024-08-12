@@ -5,6 +5,7 @@ public abstract class Expression
 public string? printed;
 public ValueType? CheckType;
 public Scope SemScope;
+public object? Result; 
 public virtual void Print(int indentLevel = 0)
 {
     if(CheckType!= null)
@@ -13,7 +14,7 @@ public virtual void Print(int indentLevel = 0)
     Console.WriteLine(new string(' ', indentLevel * 4) + "Token " + printed);
 }
 public abstract ValueType? CheckSemantic(Scope scope);
-public abstract object Evaluate();
+public abstract object Evaluate(Scope scope, object set, object instance=null);
 }
 public class ProgramExpression: Expression
 {
@@ -24,9 +25,19 @@ public class ProgramExpression: Expression
     }
 
 
-    public override object Evaluate()
+    public override object Evaluate(Scope scope, object set, object instance=null)
     {
-        throw new NotImplementedException();
+        List<Card> cards= new(false);
+        object values=null;
+        foreach(Expression exp in Instances)
+        {
+            values= exp.Evaluate(scope, null, instance);
+            if(exp is CardInstance card)
+            {
+                cards.Add((Card)values);
+            }
+        }
+        return cards;
     }
     public override ValueType? CheckSemantic(Scope scope)
     {
@@ -118,7 +129,8 @@ public class BinaryExpression : Expression
         {
             Right.CheckType= Right.CheckSemantic(scope);
             ValueType? tempforOut;
-            if(scope == null||!scope.Find(Left, out tempforOut) || !scope.WithoutReps) 
+            object v;
+            if(scope == null||!scope.Find(Left, out tempforOut, out v) || !scope.WithoutReps) 
             {
                 Left.CheckType= Left.CheckSemantic(scope);
                 if(Tools.VariableTypes.Contains(Left.CheckType))
@@ -126,7 +138,7 @@ public class BinaryExpression : Expression
                     if(Left.CheckType == Right.CheckType || Left.CheckType== ValueType.Unassigned)
                     {
                         Left.CheckType= Right.CheckType;
-                        scope?.AddVar(Left, Right);
+                        scope?.AddVar(Left);
                     }
                     else 
                         Errors.List.Add(new CompilingError("Expected the same type in both sides of the equal operator",new Position()));
@@ -167,43 +179,9 @@ public class BinaryExpression : Expression
     }
     public override object Evaluate()
     {
-        switch(Operator)
-        {
-            case TokenType.Plus:
-                return (double)Left.Evaluate() + (double)Right.Evaluate();
-            case TokenType.Minus:
-                return (double)Left.Evaluate() - (double)Right.Evaluate();
-            case TokenType.Multiply:
-                return (double)Left.Evaluate() * (double)Right.Evaluate();
-            case TokenType.Divide:
-                return (double)Left.Evaluate() / (double)Right.Evaluate();
-            case TokenType.Pow:
-                return Math.Pow((double)Left.Evaluate(), (double)Right.Evaluate());
 
-            case TokenType.Equal:
-                return Tools.EqualTerm(Left.Evaluate(), Right.Evaluate());
-            case TokenType.LessEq:
-                return (double)Left.Evaluate() <= (double)Right.Evaluate();
-            case TokenType.MoreEq:
-                return (double)Left.Evaluate() >= (double)Right.Evaluate();
-            case TokenType.More:
-                return (double)Left.Evaluate() > (double)Right.Evaluate();
-            case TokenType.Less:
-                return (double)Left.Evaluate() < (double)Right.Evaluate();
-                
-            case TokenType.And:
-                return (bool)Left.Evaluate() && (bool)Right.Evaluate();
-            case TokenType.Or:
-                return (bool)Left.Evaluate() || (bool)Right.Evaluate();
-
-            case TokenType.Concatenation:
-                return (string)Left.Evaluate() + (string)Right.Evaluate();
-            case TokenType.SpaceConcatenation:
-                return (string)Left.Evaluate() +" "+ (string)Right.Evaluate();
-
-            default:
-                throw new Exception("Invalid Operator");
-        } 
+        throw new Exception("Invalid Operator");
+        
     }
 }
 public class Atom: Expression
@@ -228,7 +206,7 @@ public class Atom: Expression
     {
         throw new NotImplementedException();
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
         throw new NotImplementedException();
     }
@@ -296,13 +274,13 @@ public class Number: Atom
     {
         this.printed= "Number";
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
         return Convert.ToDouble(Value.Meaning);
     }
     public override ValueType? CheckSemantic(Scope scope)
     {
-        CheckType = ValueType.Int;
+        CheckType = ValueType.Int; //TODO: this.SemanticScope = scope;
         return CheckType;
     }
 }
@@ -312,7 +290,7 @@ public class BooleanLiteral : Atom
     {
         this.printed = "Boolean";
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
         return Convert.ToBoolean(Value.Meaning);
     }
@@ -329,7 +307,7 @@ public class IdentifierExpression : Atom
 {
     public IdentifierExpression(Token token):base(token)
     {
-        this.printed = "ID"; // O alguna otra forma de representar el identificador visualmente
+        this.printed = "ID"; 
     }
 
     public override ValueType? CheckSemantic(Scope scope)
@@ -342,7 +320,8 @@ public class IdentifierExpression : Atom
         else
         {
             ValueType? type;
-            if(scope!= null && scope.Find(this, out type))
+            object v;
+            if(scope!= null && scope.Find(this, out type, out v))
             {
                 CheckType= type;
                 return type;
@@ -355,6 +334,10 @@ public class IdentifierExpression : Atom
         }
     }
 
+    public override object Evaluate(Scope scope,object set, object instance= null)
+    {
+        
+    }
 }
 public class StringExpression : Atom
 {
@@ -362,7 +345,7 @@ public class StringExpression : Atom
     {
         this.printed = "STRING"; // O alguna otra forma de representar el identificador visualmente
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
         return Value.Meaning.Substring(1,Value.Meaning.Length-2);
     }

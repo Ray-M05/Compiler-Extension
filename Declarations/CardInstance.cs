@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Compiler;
 public class CardInstance: Expression
 {
@@ -51,9 +53,34 @@ public class CardInstance: Expression
         return ValueType.Checked;
     }
 
-    public override object Evaluate()
+    readonly Dictionary<string, string> Mapping = new()
     {
-        throw new NotImplementedException();
+        {"Melee","M"},
+        {"Range","R"},
+        {"Seige","S"}
+    };
+
+    public override object Evaluate(Scope scope,object set, object instance= null)
+    {
+        string range="";
+        string temp;
+        foreach (Expression item in Range)
+        {
+            temp= (string)item.Evaluate(scope, set);
+            if(Mapping.ContainsKey(temp))
+            {
+                range+= Mapping[temp];
+            }
+            else
+            {
+                Errors.List.Add(new CompilingError("Range must be valid", new Position()));
+            }   
+        }
+
+        CompilerCard card = new((string)Name!.Evaluate(scope, set), (string)Type!.Evaluate(scope, set),
+        (int)Power!.Evaluate(scope, set),range, new Player(), (string)Faction!.Evaluate(scope, set),
+        (List<IEffect>)OnActivation!.Evaluate(scope,null!));
+        return card;
     }
 }
 
@@ -71,9 +98,15 @@ public class OnActivation: Expression
         }
         return ValueType.Checked;
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        throw new NotImplementedException();
+        List<IEffect> effects= new();
+        foreach(EffectParam assignment in Effects)
+        {
+            assignment.Evaluate(scope, set, effects);
+        }
+        Result=effects;
+        return Result;
     }
     public override void Print(int indentLevel = 0)
     {
@@ -156,9 +189,58 @@ public class Selector: Expression
         
         return ValueType.Checked;
     }
-    public override object Evaluate()
+    
+    readonly Dictionary<string, string> Mapping = new()
     {
-        throw new NotImplementedException();
+        {"hand", "Hand"},
+        {"otherhand", "OtherHand"},
+        {"deck", "Deck"},
+        {"otherdeck", "OtherDeck"},
+        {"field", "Field"},
+        {"graveyard", "GraveYard"},
+        {"board", "Board"},
+        {"otherfield", "Otherfield"},
+        {"othergraveyard", "OtherGraveYard"},
+        {"parent","parent"}
+    };
+
+    public override object? Evaluate(Scope scope, object set, object instance=null)
+    {
+        string s= (string)Source!.Evaluate(scope, set,instance);
+        if(Mapping.ContainsKey(s))
+        {
+            if(s== "parent")
+        {
+            Source.Result= set;
+        }
+        Single!.Result = Single.Evaluate(scope, null!, null!);
+        }
+        else
+           Errors.List.Add(new CompilingError("Selector must have a valid source", new Position()));
+
+        return null;
+    }
+
+    public List<Card> Execute(DeckContext context)
+    {
+        Predicate predicate= (Predicate as Predicate)!;
+        
+        var cont = context.GetType();
+        List<Card> SourceCards = (List<Card>)cont.GetProperty(Mapping[(string)Source.Result!]).GetValue(context);
+                
+        List<Card> Targets= new(); //TODO: bool false
+
+        foreach(Card card in SourceCards)
+        {
+            predicate.Unit!.Result= card;
+            if((bool)predicate.Evaluate(null!,null!))
+            {
+                Targets.Add(card);
+                if((bool)Single!.Result!)
+                break;
+            }
+        }
+        return Targets;
     }
     public override void Print(int indentLevel = 0)
     {
@@ -177,7 +259,8 @@ public class Predicate: Expression
         if(Unit!= null)
         {
             ValueType? type;
-            if(!scope.Find(Unit, out type))
+            object v;
+            if(!scope.Find(Unit, out type, out v))
             {
                 Unit.CheckType= ValueType.Card;
                 SemScope.AddVar(Unit);
@@ -198,8 +281,107 @@ public class Predicate: Expression
     return ValueType.Predicate;
         
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
+    {
+        Scope Evaluator = new Scope(scope);
+        Unit!.Result= set;
+        Evaluator.AddVar(Unit, Unit.Value);
+        return Condition!.Evaluate(Evaluator, null!);
+    }
+}
+
+public abstract class Card
+{
+    public abstract string Name{get; set;}
+    public abstract string Type{get; set;}
+    public abstract int Power{get; set;}
+    public abstract string Range{get; set;}
+    public abstract Player Owner{get; set;}
+    public abstract string Faction{get; set;}
+    public abstract List<IEffect> Effects{get; set;}
+    public abstract Card GetCopy();
+
+    public void Execute(DeckContext context)
+    {
+        foreach(IEffect effect in Effects)
+        {
+            effect.Execute(context);
+        }
+    }
+}
+
+public class CompilerCard : Card
+{ //TODO: por que dos, deje la abstracta y las unipublic override string Name{get; set;}
+    public override string Name{get; set;}
+    public override string Type{get; set;}
+    public override int Power{get; set;}
+    public override string Range{get; set;}
+    public override Player Owner{get; set;}
+    
+    public override string Faction{get; set;}
+    public override List<IEffect> Effects{get; set;}
+    public CompilerCard(string name, string type, int power, string range, Player owner, string faction, List<IEffect> effects)
+    {
+        Name = name;
+        Type = type;
+        Power = power;
+        Range = range;
+        Owner = owner;
+        Faction = faction;
+        Effects = effects;
+    }
+    public override Card GetCopy()
     {
         throw new NotImplementedException();
     }
+    public override string ToString()
+    {
+        string result= "";
+        result += "Name: " + Name + "\n";
+        result += "Type: " + Type + "\n";
+        result += "Power: " + Power + "\n";
+        result += "Range: " + Range + "\n";
+        result += "Owner: " + Owner + "\n";
+        result += "Faction: " + Faction + "\n";
+        result += "Efectos: \n";
+        int conta = 1;
+        foreach(IEffect effect in Effects)
+        {
+            Console.WriteLine($"{conta++}- "+ effect);
+        }
+        return result;
+    }
+}
+
+public class Player
+{
+    bool Turn{get; set;}
+}
+
+public abstract class DeckContext
+{
+    bool Turn{get; }
+    //TODO: pq un interfaz
+    public abstract List<CompilerCard> Deck{get; }
+    public abstract List<CompilerCard> OtherDeck{get; }
+    public abstract List<CompilerCard> DeckOfPlayer(Player player);
+    
+    
+    public abstract List<CompilerCard> GraveYard{get; }
+    public abstract List<CompilerCard> OtherGraveYard{get; }
+    
+    public abstract List<CompilerCard> GraveYardOfPlayer(Player player);
+    
+    public abstract List<CompilerCard> Field{get; }
+    public abstract List<CompilerCard> OtherField{get; }
+    public abstract List<CompilerCard> FieldOfPlayer(Player player);
+    
+    
+    public abstract List<CompilerCard> Hand{get; }
+    public abstract List<CompilerCard> OtherHand{get; }
+
+
+    public abstract List<CompilerCard> HandOfPlayer(Player player);
+    public abstract List<CompilerCard> Board{get; }
+    public Player TriggerPlayer{get; }
 }

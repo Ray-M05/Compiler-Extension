@@ -2,7 +2,7 @@ namespace Compiler;
 public class Scope
 {
     public Scope parentScope;
-    public Scope(Scope Parent= null)
+    public Scope(Scope Parent= null!)
     {
         parentScope= Parent;
     }
@@ -11,8 +11,8 @@ public class Scope
     private void InternalFind(Expression tofind, out Expression Finded, out Scope Where)
     {
         bool b= false;
-        Finded = null;
-        Where = null;
+        Finded = null!;
+        Where = null!;
         foreach(Expression indic in Variables)
         {
             if(tofind.Equals(indic)) 
@@ -29,12 +29,12 @@ public class Scope
                 parentScope.InternalFind(tofind, out Finded, out Where);
             }
             else{
-                Where = null;
-                Finded = null;
+                Where = null!;
+                Finded = null!;
             }
         }
     }
-    public bool Find(Expression exp, out ValueType? type)
+    public bool Find(Expression exp, out ValueType? type, out object result)
     {
         Expression Finded;
         Scope Where;
@@ -42,23 +42,27 @@ public class Scope
         if(Where!= null)
         {
             type= Finded.CheckType;
+            result= Finded.Result!;
             return true;
         }
         else
         {
             type = null;
+            result = null!;
             return false;
         }
     }
-    public void AddVar(Expression exp, Expression Value= null)
+    public void AddVar(Expression exp)
     {
         Expression Finded;
         Scope Where;
         InternalFind(exp,out Finded, out Where);
         if(Where!= null)
         {
-            if(!WithoutReps)
-                Where.Variables.Add(Value);
+            if(!WithoutReps){
+                Finded.CheckType= exp.CheckType;
+                Finded.Result= exp.Result;
+            }
             else
                 throw new Exception("A no Reps statement was violated");
         }

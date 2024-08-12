@@ -47,9 +47,14 @@ public class EffectInstance: Expression
         }
         return ValueType.Checked;
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        throw new NotImplementedException();
+        Scope Evaluator = new Scope(scope);
+        foreach(Expression item in Instructions)
+        {
+            item.Evaluate(Evaluator,null);
+        }
+        return true;
     }
     public override void Print(int indentLevel = 0)
     {
@@ -119,7 +124,8 @@ public class ForExpression: Expression
         if(Variable!= null)
         {
             ValueType? type;
-            if(!scope.Find(Variable, out type))
+            object v;
+            if(!scope.Find(Variable, out type, out v))
             {
                 Variable.CheckType= ValueType.Card;
                 SemScope.AddVar(Variable);
@@ -149,9 +155,22 @@ public class ForExpression: Expression
         }
         return  ValueType.Checked;
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        throw new NotImplementedException();
+        Scope Evaluator = new Scope(scope);
+
+        Collection!.Result = Collection.Evaluate(scope, null);
+
+        List<Card> list = (List<Card>)Collection.Result; 
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            Variable!.Result = list[i]; 
+            Evaluator.AddVar(Variable, Variable.Value); 
+            Instructions!.Evaluate(Evaluator, null); 
+        }
+
+        return null;
     }
     public override void Print(int indentLevel = 0)
     {
@@ -183,13 +202,64 @@ public class WhileExpression: Expression
         return  ValueType.Checked;
     }
 
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        throw new NotImplementedException();
+        Scope Evaluator = new Scope(scope); 
+
+        while (true)
+        {
+            if (!(bool)Condition.Evaluate(scope, null))
+            {
+                break;
+            }
+
+            Instructions.Evaluate(Evaluator, null);
+        }
+
+        return null;   
     }
     public override void Print(int indentLevel = 0)
     {
         printed = "While";
         Console.WriteLine(new string(' ', indentLevel * 4) + printed);
+    }
+}
+
+//TODO: esta interfaz puede ser una clase?
+public interface IEffect
+{
+    EffectInstance effect{get; set;}
+    List<IdentifierExpression> Params{get; set;}
+    Selector Selector{get; set;}
+
+    void Execute(DeckContext context)
+    {
+        List<CompilerCard> targets= new(null,null);
+        if(Selector!= null)
+        targets= Selector.Execute(context);
+        effect.Execute(context, targets, Params);
+    }
+}
+public class MyEffect: IEffect
+{
+    public MyEffect(EffectInstance eff, Selector Sel, List<IdentifierExpression> Par)
+    {
+        effect = eff;
+        Selector = Sel;
+        Params= Par;
+    }
+    public List<IdentifierExpression> Params{get; set;}
+
+    public EffectInstance effect{get; set;}
+
+    public Selector Selector{get; set;}
+    public override string ToString()
+    {
+        string s= "Efecto: " + (string)effect.Name.Result + "\n";
+        foreach(IdentifierExpression identifier in Params)
+        {
+            s+= identifier.Value.Meaning+ "\n";
+        }
+        return s;
     }
 }
