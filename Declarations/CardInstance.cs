@@ -149,9 +149,38 @@ public class EffectParam: Expression
         return ValueType.Checked;
     }
 
-    public override object Evaluate()
+    public override object Evaluate(Scope scope, object set, object instance=null)
     {
-        throw new NotImplementedException();
+        //TODO: revisar
+        List<IdentifierExpression> CorrectParams= new();
+        for(int i = 0; i< Effect.Count; i++)
+        {
+            Expression exp = Effect[i];
+            object value =exp.Evaluate(scope,null);
+            if(exp is BinaryExpression bin)
+            {
+                bin.Left.Result = value;
+                exp= bin.Left;
+                CorrectParams.Add((IdentifierExpression)exp);
+            }
+        }
+        Result= Processor.FindEffect(CorrectParams);
+
+        Result= new MyEffect((EffectInstance)Result, Selector, CorrectParams);
+        if(instance is List<IEffect> list)
+        {
+            list.Add((IEffect)Result);
+        }
+        if(Selector!= null)
+        Selector.Evaluate(scope, set, instance);
+        if(PostAction!= null)
+        {
+            if(Selector!= null)
+                PostAction.Evaluate(scope, Selector.Source.Result, instance);
+            else
+                PostAction.Evaluate(scope, null, instance);
+        }
+        return null;
     }
     public override void Print(int indentLevel = 0)
     {
@@ -285,7 +314,7 @@ public class Predicate: Expression
     {
         Scope Evaluator = new Scope(scope);
         Unit!.Result= set;
-        Evaluator.AddVar(Unit, Unit.Value);
+        Evaluator.AddVar(Unit);
         return Condition!.Evaluate(Evaluator, null!);
     }
 }
@@ -311,7 +340,7 @@ public abstract class Card
 }
 
 public class CompilerCard : Card
-{ //TODO: por que dos, deje la abstracta y las unipublic override string Name{get; set;}
+{ 
     public override string Name{get; set;}
     public override string Type{get; set;}
     public override int Power{get; set;}
@@ -361,7 +390,6 @@ public class Player
 public abstract class DeckContext
 {
     bool Turn{get; }
-    //TODO: pq un interfaz
     public abstract List<CompilerCard> Deck{get; }
     public abstract List<CompilerCard> OtherDeck{get; }
     public abstract List<CompilerCard> DeckOfPlayer(Player player);

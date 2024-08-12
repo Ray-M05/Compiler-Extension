@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Compiler;
 
 public abstract class Expression
@@ -27,7 +29,7 @@ public class ProgramExpression: Expression
 
     public override object Evaluate(Scope scope, object set, object instance=null)
     {
-        List<Card> cards= new(false);
+        List<Card> cards= new();
         object values=null;
         foreach(Expression exp in Instances)
         {
@@ -241,17 +243,83 @@ public class UnaryExpression : Atom
             { TokenType.Find, ValueType.Predicate}
         };
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope,object set, object instance= null)
     {
+        if(Parameter!=null) 
         switch(Operator)
         {
-            case TokenType.Not:
-                return !(bool)Parameter.Evaluate();
+            case TokenType.Add:
+            case TokenType.Remove:
+            case TokenType.Push:
+            case TokenType.SendBottom:
+            {
+                Type type = instance.GetType();
+                string methodName = Operator.ToString();
+                MethodInfo methodInfo = type.GetMethod(methodName);
+                object evaluatedOperand = Parameter.Evaluate(scope, null);
+                methodInfo.Invoke(instance, new object[] { evaluatedOperand });
+                return null!;
+            }
+
+            case TokenType.HandOfPlayer:
+            case TokenType.DeckOfPlayer:
+            case TokenType.GraveYardOfPlayer:
+            case TokenType.FieldOfPlayer:
+            case TokenType.Find:
+            case TokenType.Pop:
+            {
+                Type type = instance.GetType();
+                string methodName = Operator.ToString();
+                MethodInfo methodInfo = type.GetMethod(methodName);
+                object evaluatedOperand = Parameter.Evaluate(scope, null);
+                Result = methodInfo.Invoke(instance, new object[] { evaluatedOperand });
+                return Result!;
+            }
+
+            case TokenType.RDecrement:
+            Parameter.Result= (int)Parameter.Evaluate(scope,null)-1;
+            Result= (int)Parameter.Result+1;
+            EvaluateUtils.ActualizeScope(Parameter, scope);
+            return (int)Result;
+
+            case TokenType.LDecrement:
+            Parameter.Result= (int)Parameter.Evaluate(scope,null)-1;
+            Result= (int)Parameter.Result;
+            EvaluateUtils.ActualizeScope(Parameter, scope);
+            return (int)Result;
+            
+            case TokenType.RIncrement:
+            Parameter.Result= (int)Parameter.Evaluate(scope,null)+1;
+            Result= (int)Parameter.Result-1;
+            EvaluateUtils.ActualizeScope(Parameter, scope);
+            return (int)Result;
+            
+            case TokenType.LIncrement:
+            Parameter.Result= (int)Parameter.Evaluate(scope,null)+1;
+            Result= (int)Parameter.Result;
+            EvaluateUtils.ActualizeScope(Parameter, scope);
+            return (int)Result;
+
             case TokenType.Minus:
-                return -1* (double)Parameter.Evaluate();
-            default:
-            throw new Exception("Unknown unary operator");
+            Result= (int)Parameter.Evaluate(scope, null)*-1;
+            return (int)Result-1;
+
+            case TokenType.Plus:
+            Result= Parameter.Evaluate(scope, null);
+            return Result;
+            
+            case TokenType.Not:
+            {
+                Result= Parameter.Evaluate(scope, null);
+                return !(bool)Result;
+            }
         }
+        if(Tools.GetOperatorType(Operator)!=null)
+        {
+            CheckType = Tools.GetOperatorType(Operator);
+            return CheckType;
+        }
+        throw new Exception("Invalid Unary Operator");
     }
         
     public override ValueType? CheckSemantic(Scope scope)
@@ -336,7 +404,52 @@ public class IdentifierExpression : Atom
 
     public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        
+        if (Tools.GetPossibleMethods(ValueType.Context)!= null)
+        {
+            if(instance is DeckContext context)
+            {
+                var cont = context.GetType();
+                return cont.GetProperty(Value.Meaning).GetValue(context);
+            }
+            else 
+                Errors.List.Add(new CompilingError("Expected a context",new Position()));
+        }
+        if(Tools.GetPossibleMethods(ValueType.Card)!= null)
+        {
+            if(instance is Card card)
+            {
+                if(set!=null)
+                {
+                    string propertyName = Value.Meaning;
+                    PropertyInfo property = card.GetType().GetProperty(propertyName);
+                    property.SetValue(card, set);
+                }
+                else
+                {
+                    return card.GetType().GetProperty(Value.Meaning).GetValue(card);
+                }
+            }
+            
+        }
+        else if(set!= null)
+        {
+            Result= set;
+            if(scope!=null)
+            scope.AddVar(this);
+            return Value;
+        }
+        else
+        {
+            object value= null;
+            if(Value!= null)
+            {
+                ValueType? v;
+                if(scope!=null)
+                scope.Find(this, out v, out value);
+            }
+            return value;
+        }
+        return null;
     }
 }
 public class StringExpression : Atom
