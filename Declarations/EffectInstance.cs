@@ -3,7 +3,7 @@ public class EffectInstance: Expression
 {
     public Expression? Name  {get; set;}
     public List<Expression>? Params { get; set; }
-    public Expression? Action { get; set; }
+    public Action? Action { get; set; }
 
     public override ValueType? CheckSemantic(Scope scope)
     {
@@ -61,8 +61,8 @@ public class EffectInstance: Expression
     public void Execute(DeckContext context, List<Card> targets, List<IdentifierExpression> Param)
     {
         Scope Evaluator = new Scope();
-        Action.Context.Value= context;
-        Action.Targets.Value= targets;
+        Action.Context.Result= context;
+        Action.Targets.Result= targets;
         if(Params!= null && Params.Count>0){
         Processor.SetParameters(Param, Params);
         IdentifierExpression id;

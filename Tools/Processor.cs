@@ -13,7 +13,7 @@ namespace Compiler
             if (expression != null)
             {
                 expressions.Remove(expression);
-                return (IdentifierExpression)expression.Value;
+                return (string)expression.Result!;
             }
 
             return null;

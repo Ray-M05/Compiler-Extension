@@ -179,12 +179,128 @@ public class BinaryExpression : Expression
            Errors.List.Add(new CompilingError("Unknown operator",new Position()));
             return null;
     }
-    public override object Evaluate()
+    public override object Evaluate(Scope scope, object set, object instance=null)
     {
+        if (Operator != TokenType.Point&&Operator != TokenType.Index
+        &&Operator != TokenType.Assign&&Operator != TokenType.Colon
+        &&Operator != TokenType.PlusEqual&&Operator != TokenType.MinusEqual)
+        {
+            Right.Result= Right.Evaluate(scope,set,instance);
+            Left.Result= Left.Evaluate(scope,set,instance); 
 
-        throw new Exception("Invalid Operator");
-        
+            switch(Operator)
+            {
+                case TokenType.Plus:
+                this.Result= (int)Left.Result + (int)Right.Result;
+                break;
+
+                case TokenType.Minus:
+                this.Result= (int)Left.Result - (int)Right.Result;
+                break;
+
+                case TokenType.Multiply:
+                this.Result= (int)Left.Result * (int)Right.Result;
+                break;
+
+                case TokenType.Divide:
+                if((int)Right.Result ==0)
+                    Errors.List.Add(new CompilingError("Division by zero",new Position()));
+                else    
+                    this.Result= (int)Left.Result / (int)Right.Result;
+                break;
+
+                case TokenType.Pow:
+                this.Result= Math.Pow((int)Left.Result, (int)Right.Result);
+                break;
+
+                case TokenType.Less:
+                this.Result= (int)Left.Result < (int)Right.Result;
+                break;
+
+                case TokenType.More:
+                this.Result= (int)Left.Result > (int)Right.Result;
+                break;
+
+                case TokenType.And:
+                this.Result= (bool)Left.Result && (bool)Right.Result;
+                break;
+
+                case TokenType.Or:
+                this.Result= (bool)Left.Result || (bool)Right.Result;
+                break;
+
+                case TokenType.Concatenation:
+                this.Result= Left.Result.ToString() + Right.Result.ToString();
+                break;
+
+                case TokenType.SpaceConcatenation:
+                this.Result= Left.Result.ToString() + " " + Right.Result.ToString();
+                break;
+
+                case TokenType.Equal:
+                this.Result= Left.Result.Equals(Right.Result);
+                break;
+
+                case TokenType.LessEq:
+                this.Result= (int)Left.Result <= (int)Right.Result;
+                break;
+
+                case TokenType.MoreEq:
+                this.Result= (int)Left.Result >= (int)Right.Result;
+                break;
+            }
+
+            return this.Result!;
+        }
+        else if(Operator== TokenType.PlusEqual)
+        {
+            Right.Result= Right.Evaluate(scope,set,instance);
+            object Result= Left.Evaluate(scope, set,instance);
+            Left.Evaluate(scope,(int)Result! + (int)Right.Result);
+            this.Result= Left.Result;
+            return Left.Result;   
+        }
+        else if(Operator== TokenType.MinusEqual)
+        {
+            Right.Result= Right.Evaluate(scope,set,instance);
+            Result= Left.Evaluate(scope, set,instance);
+            Left.Evaluate(scope,(int)Result! - (int)Right.Result);
+            this.Result= Left.Result;
+            return Left.Result;   
+        }
+        else if(Operator==TokenType.Index)
+        {
+            Right.Result= Right.Evaluate(scope,set,instance);
+            Left.Result= Left.Evaluate(scope, set,instance);
+            if(Right.Result is List<Card> list)
+            {
+                if((int)Right.Result<0|| (int)Right.Result>=list.Count)
+                    Errors.List.Add(new CompilingError("Index out of range",new Position()));
+
+                return list[(int)Right.Result];
+            }
+            else
+                Errors.List.Add(new CompilingError("Expected a CardCollection",new Position()));
+        }
+        else if(Operator== TokenType.Assign || Operator == TokenType.Colon)
+        {
+            Right.Result= Right.Evaluate(scope, null);
+            Left.Evaluate(scope, Right.Result);
+            Result= Left.Result;
+            return Left.Result;
+        }
+        else if(Operator== TokenType.Point)
+        {
+            Left.Result= Left.Evaluate(scope, null!, instance);
+            Right.Result= Right.Evaluate(scope, set, Left.Result);
+            
+            return Right.Result;
+        }
+        else
+            Errors.List.Add(new CompilingError("Unknown operator",new Position()));
+        return null;
     }
+    
 }
 public class Atom: Expression
 {
@@ -279,25 +395,25 @@ public class UnaryExpression : Atom
             case TokenType.RDecrement:
             Parameter.Result= (int)Parameter.Evaluate(scope,null)-1;
             Result= (int)Parameter.Result+1;
-            EvaluateUtils.ActualizeScope(Parameter, scope);
+            Processor.UpdateScope(Parameter, scope);
             return (int)Result;
 
             case TokenType.LDecrement:
             Parameter.Result= (int)Parameter.Evaluate(scope,null)-1;
             Result= (int)Parameter.Result;
-            EvaluateUtils.ActualizeScope(Parameter, scope);
+            Processor.UpdateScope(Parameter, scope);
             return (int)Result;
             
             case TokenType.RIncrement:
             Parameter.Result= (int)Parameter.Evaluate(scope,null)+1;
             Result= (int)Parameter.Result-1;
-            EvaluateUtils.ActualizeScope(Parameter, scope);
+            Processor.UpdateScope(Parameter, scope);
             return (int)Result;
             
             case TokenType.LIncrement:
             Parameter.Result= (int)Parameter.Evaluate(scope,null)+1;
             Result= (int)Parameter.Result;
-            EvaluateUtils.ActualizeScope(Parameter, scope);
+            Processor.UpdateScope(Parameter, scope);
             return (int)Result;
 
             case TokenType.Minus:

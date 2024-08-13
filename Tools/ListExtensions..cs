@@ -10,7 +10,7 @@ public static class Extensions
     {
         if (pred is Predicate predicate)
         {
-            List<T> custom = new(true, null);
+            List<T> custom = new();
             foreach (var item in list)
             {
                 if ((bool)predicate.Evaluate(null, item))
