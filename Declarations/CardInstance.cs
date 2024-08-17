@@ -151,7 +151,6 @@ public class EffectParam: Expression
 
     public override object Evaluate(Scope scope, object set, object instance=null)
     {
-        //TODO: revisar
         List<IdentifierExpression> CorrectParams= new();
         for(int i = 0; i< Effect.Count; i++)
         {
@@ -239,10 +238,10 @@ public class Selector: Expression
         if(Mapping.ContainsKey(s))
         {
             if(s== "parent")
-        {
-            Source.Result= set;
-        }
-        Single!.Result = Single.Evaluate(scope, null!, null!);
+            {
+                Source.Result= set;
+            }
+            Single!.Result = Single.Evaluate(scope, null!, null!);
         }
         else
            Errors.List.Add(new CompilingError("Selector must have a valid source", new Position()));
@@ -257,12 +256,11 @@ public class Selector: Expression
         var cont = context.GetType();
         List<Card> SourceCards = (List<Card>)cont.GetProperty(Mapping[(string)Source.Result!]).GetValue(context);
                 
-        List<Card> Targets= new(); //TODO: bool false
+        List<Card> Targets= new();
 
         foreach(Card card in SourceCards)
         {
-            predicate.Unit!.Result= card;
-            if((bool)predicate.Evaluate(null!,null!))
+            if((bool)predicate.Evaluate(null!, card))
             {
                 Targets.Add(card);
                 if((bool)Single!.Result!)
@@ -384,32 +382,32 @@ public class CompilerCard : Card
 
 public class Player
 {
-    bool Turn{get; set;}
+    public bool Turn{get; set;}
 }
 
 public abstract class DeckContext
 {
     bool Turn{get; }
-    public abstract List<CompilerCard> Deck{get; }
-    public abstract List<CompilerCard> OtherDeck{get; }
-    public abstract List<CompilerCard> DeckOfPlayer(Player player);
+    public abstract List<Card> Deck{get;}
+    public abstract List<Card> OtherDeck{get; }
+    public abstract List<Card> DeckOfPlayer(Player player);
     
     
-    public abstract List<CompilerCard> GraveYard{get; }
-    public abstract List<CompilerCard> OtherGraveYard{get; }
+    public abstract List<Card> GraveYard{get; }
+    public abstract List<Card> OtherGraveYard{get; }
     
-    public abstract List<CompilerCard> GraveYardOfPlayer(Player player);
+    public abstract List<Card> GraveYardOfPlayer(Player player);
     
-    public abstract List<CompilerCard> Field{get; }
-    public abstract List<CompilerCard> OtherField{get; }
-    public abstract List<CompilerCard> FieldOfPlayer(Player player);
+    public abstract List<Card> Field{get; }
+    public abstract List<Card> OtherField{get; }
+    public abstract List<Card> FieldOfPlayer(Player player);
     
     
-    public abstract List<CompilerCard> Hand{get; }
-    public abstract List<CompilerCard> OtherHand{get; }
+    public abstract List<Card> Hand{get; }
+    public abstract List<Card> OtherHand{get; }
 
 
-    public abstract List<CompilerCard> HandOfPlayer(Player player);
-    public abstract List<CompilerCard> Board{get; }
-    public Player TriggerPlayer{get; }
+    public abstract List<Card> HandOfPlayer(Player player);
+    public abstract List<Card> Board{get; }
+    public abstract Player TriggerPlayer{get; }
 }

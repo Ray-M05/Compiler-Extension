@@ -15,7 +15,7 @@ namespace Compiler
                 expressions.Remove(expression);
                 return (string)expression.Result!;
             }
-
+            
             return null;
         }
 
@@ -30,7 +30,8 @@ namespace Compiler
             }
             else
             {
-                throw new InvalidOperationException("Unexpected code Entrance");
+                Errors.List.Add(new CompilingError("Unexpected code Entrance", new Position()));
+                return null;
             }
         }
 
@@ -63,20 +64,20 @@ namespace Compiler
         private static void ValidateEffectName(string? name)
         {
             if (name == null)
-                throw new ArgumentNullException("Evaluate Error, There is no name given for the Effect of the Card");
+                Errors.List.Add(new CompilingError("Evaluate Error, There is no name given for the Effect of the Card", new Position()));
             if (!Effects.ContainsKey(name))
-                throw new KeyNotFoundException($"Evaluate Error, there is no effect named {name} declared previously");
+                Errors.List.Add(new CompilingError("Evaluate Error, The Effect of the Card is not declared", new Position()));
         }
 
         private static bool InternalFinder(List<IdentifierExpression> declared, List<IdentifierExpression> asked)
         {
             if (declared.Count != asked.Count)
-                throw new InvalidOperationException($"You must declare exactly {declared.Count} params at the effect, you declared {asked.Count}");
+                Errors.List.Add(new CompilingError("You must declare exactly params at the effect, you declared", new Position()));
 
-            bool allMatch = asked.All(ask => declared.Any(dec => dec.Equals(ask) && dec.CheckSemantic == ask.CheckSemantic));
+            bool allMatch = asked.All(ask => declared.Any(dec => dec.Equals(ask) && dec.CheckType == ask.CheckType));
 
             if (!allMatch)
-                throw new InvalidOperationException("The params you declared don't coincide with the effect");
+                Errors.List.Add(new CompilingError("The params you declared don't coincide with the effect", new Position()));
 
             return true;
         }

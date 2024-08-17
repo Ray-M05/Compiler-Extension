@@ -1,5 +1,5 @@
 using System.Reflection;
-
+using ListExtensions;
 namespace Compiler;
 
 public abstract class Expression
@@ -75,6 +75,11 @@ public class BinaryExpression : Expression
             return bin.Left.Equals(Left) && bin.Right.Equals(Right) && bin.Operator == Operator;
         }
         return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return (Left?.GetHashCode() ?? 0) ^ (Right?.GetHashCode() ?? 0) ^ Operator.GetHashCode();
     }
 
     public override ValueType? CheckSemantic(Scope scope)
@@ -320,6 +325,12 @@ public class Atom: Expression
         }
         return false;
     }
+
+    public override int GetHashCode()
+    {
+        return Value.Meaning?.GetHashCode() ?? 0;
+    }
+
     public override ValueType? CheckSemantic(Scope scope)
     {
         throw new NotImplementedException();
@@ -361,22 +372,13 @@ public class UnaryExpression : Atom
     }
     public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        if(Parameter!=null) 
         switch(Operator)
         {
             case TokenType.Add:
             case TokenType.Remove:
             case TokenType.Push:
             case TokenType.SendBottom:
-            {
-                Type type = instance.GetType();
-                string methodName = Operator.ToString();
-                MethodInfo methodInfo = type.GetMethod(methodName);
-                object evaluatedOperand = Parameter.Evaluate(scope, null);
-                methodInfo.Invoke(instance, new object[] { evaluatedOperand });
-                return null!;
-            }
-
+            case TokenType.Shuffle:
             case TokenType.HandOfPlayer:
             case TokenType.DeckOfPlayer:
             case TokenType.GraveYardOfPlayer:
@@ -386,9 +388,55 @@ public class UnaryExpression : Atom
             {
                 Type type = instance.GetType();
                 string methodName = Operator.ToString();
+                if(methodName == "Add")
+                    methodName="AddCard";
+
+                else if(methodName == "Remove")
+                    methodName = "RemoveCard";
                 MethodInfo methodInfo = type.GetMethod(methodName);
-                object evaluatedOperand = Parameter.Evaluate(scope, null);
-                Result = methodInfo.Invoke(instance, new object[] { evaluatedOperand });
+                if(instance is List<Card> list)
+                {
+                    switch(methodName)
+                    {
+                        case "Push":
+                        case "AddCard":
+                        {
+                            object card= Parameter.Evaluate(scope, null);
+                            list.AddCard((Card)card);
+                            return null;
+                        }
+                        case "RemoveCard":
+                        {
+                            object card= Parameter.Evaluate(scope, null);
+                            list.RemoveCard((Card)card);
+                            return null;
+                        }
+                        case "SendBottom":
+                        {
+                            object card= Parameter.Evaluate(scope, null);
+                            list.SendBottom((Card)card);
+                            return null;
+                        }
+                        case "Shuffle":
+                        {
+                            list.Shuffle();
+                            return null;
+                        }
+                        case "Pop":
+                        {
+                            return list.Pop();
+                        }
+                        case "Find":
+                        {
+                            object pred= Parameter.Evaluate(scope, null);
+                            return list.Find((Predicate)pred);
+                        }
+
+                    }
+                    
+                }
+                
+                Result = methodInfo.Invoke(instance, new object[] { Parameter.Evaluate(scope, null) });
                 return Result!;
             }
 
@@ -430,12 +478,9 @@ public class UnaryExpression : Atom
                 return !(bool)Result;
             }
         }
-        if(Tools.GetOperatorType(Operator)!=null)
-        {
-            CheckType = Tools.GetOperatorType(Operator);
-            return CheckType;
-        }
-        throw new Exception("Invalid Unary Operator");
+        
+        Errors.List.Add(new CompilingError("Invalid Unary Operator", new Position()));
+        return null;
     }
         
     public override ValueType? CheckSemantic(Scope scope)
@@ -460,11 +505,11 @@ public class Number: Atom
     }
     public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        return Convert.ToDouble(Value.Meaning);
+        return Convert.ToInt32(Value.Meaning);
     }
     public override ValueType? CheckSemantic(Scope scope)
     {
-        CheckType = ValueType.Int; //TODO: this.SemanticScope = scope;
+        CheckType = ValueType.Int;
         return CheckType;
     }
 }
@@ -484,8 +529,6 @@ public class BooleanLiteral : Atom
         return CheckType;
     }
 }
-
- 
 
 public class IdentifierExpression : Atom
 {
@@ -520,7 +563,7 @@ public class IdentifierExpression : Atom
 
     public override object Evaluate(Scope scope,object set, object instance= null)
     {
-        if (Tools.GetPossibleMethods(ValueType.Context)!= null)
+        if (Tools.GetPossibleMethods(ValueType.Context).Contains(Value.Type))
         {
             if(instance is DeckContext context)
             {
@@ -530,29 +573,25 @@ public class IdentifierExpression : Atom
             else 
                 Errors.List.Add(new CompilingError("Expected a context",new Position()));
         }
-        if(Tools.GetPossibleMethods(ValueType.Card)!= null)
+        if(Tools.GetPossibleMethods(ValueType.Card).Contains(Value.Type)&&instance is Card card)
         {
-            if(instance is Card card)
+            if(set!=null)
             {
-                if(set!=null)
-                {
-                    string propertyName = Value.Meaning;
-                    PropertyInfo property = card.GetType().GetProperty(propertyName);
-                    property.SetValue(card, set);
-                }
-                else
-                {
-                    return card.GetType().GetProperty(Value.Meaning).GetValue(card);
-                }
+                string propertyName = Value.Meaning;
+                PropertyInfo property = card.GetType().GetProperty(propertyName);
+                property.SetValue(card, set);
             }
-            
+            else
+            {
+                return card.GetType().GetProperty(Value.Meaning).GetValue(card);
+            }
         }
         else if(set!= null)
         {
             Result= set;
             if(scope!=null)
             scope.AddVar(this);
-            return Value;
+            return Result;
         }
         else
         {

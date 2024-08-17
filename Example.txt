@@ -40,7 +40,7 @@ card {
     Name: "Beluga",
     Faction: "Northern Realms",
     Power: 5 * (1+1),
-    Range: ["Melee", "Ranged"],
+    Range: ["Melee", "Range"],
     OnActivation: 
     [
         {
@@ -50,16 +50,16 @@ card {
                 Amount: 5
             },
             Selector: {
-                Source: "board",
+                Source: "deck",
                 Single: false,
                 Predicate: (unit) => unit.Faction == "Northern" @@ "Realms"
             },
             PostAction: {
-                Effect: "ReturnToDeck",
+                Effect: "Return to deck",
                 Selector: {
                     Source: "parent",
                     Single: false,
-                    Predicate: (unit) => unit.Power < 1
+                    Predicate: (unit) => unit.Power < 20
                 },
             },
         },

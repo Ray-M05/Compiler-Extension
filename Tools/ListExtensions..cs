@@ -19,12 +19,12 @@ public static class Extensions
             return custom;
         }
         else
-            throw new Exception("Find Argument must be a predicate");
+            Errors.List.Add(new CompilingError("Find Argument must be a predicate", new Position()));
+        return null;
     }
 
     public static void Shuffle<T>(this List<T> list)
     {
-        //TODO: aqui va una comprobacion del deck
         int n = list.Count;
         System.Random random = new System.Random();
         while (n > 0)
@@ -43,12 +43,9 @@ public static class Extensions
             list.Remove(obj);
             return obj;
         }
-        throw new Exception("Trying to Pop from an empty List");
-    }
-
-    public static void Push<T>(this List<T> list, T item)
-    {
-        list.Add(item);
+         
+        Errors.List.Add(new CompilingError("Trying to Pop from an empty List", new Position()));
+        return default;
     }
 
     public static void SendBottom<T>(this List<T> list, T item)
@@ -58,20 +55,18 @@ public static class Extensions
         list.Insert(0, item);
     }
 
-    //TODO:
-    public static void Addcard()
+    public static void AddCard<T>(this List<T> list, T item)
     {
-
+        list.Add(item);
     }
 
-    public static void Removecard()
+    public static void RemoveCard<T>(this List<T> list, T item)
     {
-
+        list.Remove(item);
     }
     
-    public static bool? PlayerOwner;
-    public static bool? AddPosibility;
-    public static string MyName="";
-    public static int? MaxElements;
+    public static bool? PlayerOwner =null;
+    public static bool? AddPosibility=null;
+    public static string Id="";
 }
 

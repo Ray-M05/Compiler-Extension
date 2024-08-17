@@ -34,6 +34,7 @@ public class EffectInstance: Expression
         string name= (string)Name!.Evaluate(scope, set);
         if(Processor.ParamsRequiered.ContainsKey(name))
             Errors.List.Add(new CompilingError("You declared at least two effects with the same name", new Position()));
+
         Processor.ParamsRequiered.Add(name, new List<IdentifierExpression>());
         Processor.Effects.Add(name, this);
         if(Params!= null && Params.Count>0)
@@ -63,17 +64,19 @@ public class EffectInstance: Expression
         Scope Evaluator = new Scope();
         Action.Context.Result= context;
         Action.Targets.Result= targets;
-        if(Params!= null && Params.Count>0){
-        Processor.SetParameters(Param, Params);
-        IdentifierExpression id;
-        foreach(Expression exp in Params)
+        if(Params!= null && Params.Count>0)
         {
-            if(exp is BinaryExpression bin)
+            Processor.SetParameters(Param, Params);
+            IdentifierExpression id;
+
+            foreach(Expression exp in Params)
             {
-                id= (IdentifierExpression)bin.Left;
-                Evaluator.AddVar(id);
+                if(exp is BinaryExpression bin)
+                {
+                    id= (IdentifierExpression)bin.Left;
+                    Evaluator.AddVar(id);
+                }
             }
-        }
         }
         Action.Evaluate(Evaluator,null); 
     }
@@ -281,7 +284,6 @@ public class WhileExpression: Expression
     }
 }
 
-//TODO: esta interfaz puede ser una clase?
 public interface IEffect
 {
     EffectInstance effect{get; set;}
@@ -290,7 +292,7 @@ public interface IEffect
 
     void Execute(DeckContext context)
     {
-        List<Card> targets; //TODO:parametros de new para unity
+        List<Card> targets; 
         if(Selector!= null)
         targets= Selector.Execute(context);
         else targets = new List<Card>();

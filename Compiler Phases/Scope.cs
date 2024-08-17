@@ -64,7 +64,8 @@ public class Scope
                 Finded.Result= exp.Result;
             }
             else
-                throw new Exception("A no Reps statement was violated");
+                Errors.List.Add(new CompilingError("A no repeats statement was violated", new Position()));
+                
         }
         else
         {

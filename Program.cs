@@ -23,6 +23,20 @@
                 root.CheckSemantic(null);
                 PrintExpressionTree(root);
                 Errors.PrintAll();
+                List<Card> cards= (List<Card>)root.Evaluate(null!,null!);
+                CheckingContext context = new();
+                
+                foreach (Card item in cards)
+                {
+                    context.Deck.Add(item);
+                }
+                if(cards!= null)
+                for(int i = cards.Count-1; i>= 0 ; i--) 
+                {
+                    Card card= cards[i];
+                    Console.WriteLine(card.ToString());
+                    card.Execute(context);
+                }
             }
             catch (Exception e)
             {
@@ -149,3 +163,113 @@
             }
         }
     }
+    public class CheckingContext: DeckContext
+    {
+        public bool Turn{get;}
+        public List<Card> Find(Expression exp)
+        {
+            List<Card> result= new();
+            if(exp is Predicate predicate)
+            {
+                foreach(Card card in Board)
+                {
+                    predicate.Unit!.Result= card;
+                    if((bool)predicate.Condition!.Evaluate(exp.SemScope, null!))
+                    {
+                        result.Add(card);
+                    }
+                }
+            }
+            return result;
+        }
+        
+        public override List<Card> Deck{get;}= new List<Card>
+        {
+        };
+        public override List<Card> OtherDeck{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> DeckOfPlayer(Player player)
+        {
+            if(player.Turn)
+            {
+                return Deck;
+            }
+            else
+            {
+            //Here OtherDeck
+                return Deck;
+            }
+        }
+        
+        
+        public override List<Card> GraveYard{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> OtherGraveYard{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> GraveYardOfPlayer(Player player)
+        {
+            if(player.Turn)
+            {
+                return GraveYard;
+            }
+            else
+            {
+                return OtherGraveYard;
+            }
+        }
+        
+        public override List<Card> Field{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> OtherField{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> FieldOfPlayer(Player player)
+        {
+            if(player.Turn)
+            {
+                return Field;
+            }
+            else
+            {
+                return OtherField;
+            }
+        }
+        
+        
+        public override List<Card> Hand{get;}= new List<Card>
+        {
+        };
+
+        public override List<Card> OtherHand{get;}= new List<Card>
+        {
+        };
+
+
+
+        public override List<Card> HandOfPlayer(Player player)
+        {
+            if(player.Turn)
+            {
+                return Hand;
+            }
+            else
+            {
+                return OtherHand;
+            }
+        }
+        public override List<Card> Board{get;}= new List<Card>
+        {
+        };
+
+        public override Player TriggerPlayer{get;}
+    }
+        

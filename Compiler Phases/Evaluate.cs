@@ -9,6 +9,6 @@ public class Evaluator
     Expression root;
     public object Evaluate()
     {
-        return root.Evaluate();
+        return root.Evaluate(null,null,null);
     }
 }

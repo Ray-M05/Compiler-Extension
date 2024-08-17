@@ -135,7 +135,7 @@ public class Parser
                 return card;
             }
             else
-            Errors.List.Add(new CompilingError("Invalid token, expecting properties of cards or Right Curly",token.PositionError));
+                Errors.List.Add(new CompilingError("Invalid token, expecting properties of cards or Right Curly",token.PositionError));
         }
     return card;
     }
@@ -162,7 +162,7 @@ public class Parser
                 return effect;
             }
             else
-            Errors.List.Add(new CompilingError("Invalid token, expecting properties of effects or Right Curly",token.PositionError));;
+                Errors.List.Add(new CompilingError("Invalid token, expecting properties of effects or Right Curly",token.PositionError));;
         }
     return effect;
     }
@@ -221,7 +221,7 @@ public class Parser
     private Expression IncrementsorIndexer (bool increment, bool index, Expression returned)
     {
         if(increment&&(tokens[position].Type == TokenType.Increment || tokens[position].Type== TokenType.Decrement))
-        {//Incrementos a la derecha
+        {//increments at right side
             if(tokens[position].Type== TokenType.Increment)
                 tokens[position].Type= TokenType.RIncrement;
             else
@@ -230,11 +230,11 @@ public class Parser
             return new UnaryExpression(returned, tokens[position-1]);
         }
         else if(index &&tokens[position].Type== TokenType.LBracket)
-        {//Indexado
+        {//Index
             Token token = tokens[position];
             if(tokens[++position].Type== TokenType.RBracket)
             {
-                throw new Exception($"Invalid Token: {tokens[position]}. Expected an Expression to index");
+                 Errors.List.Add(new CompilingError("Invalid Token, Expected an Expression to index", token.PositionError));
             }
             Expression Argument= ParseExpression();
             if(tokens[position].Type== TokenType.RBracket)
@@ -243,7 +243,7 @@ public class Parser
                 return new BinaryExpression(returned, Argument, TokenType.Index);
             }
             else
-                throw new Exception($"Invalid Token: {tokens[position]}. Expected a Right Bracket to index");
+                Errors.List.Add(new CompilingError("Invalid Token, Expected a Right Bracket to index", token.PositionError));
 
         }
         return returned;
@@ -252,14 +252,14 @@ public class Parser
     {
         Expression returned= null;
         if (position >= tokens.Count)
-        throw new Exception("Unexpected end of input");
+        Errors.List.Add(new CompilingError("Unexpected end of input", tokens[position].PositionError));
         if (LookAhead(tokens[position].Type, TokenType.LParen))
         {
             position++;
             Expression expr = ParseExpression(); 
             if (!LookAhead(tokens[position].Type,TokenType.RParen))
             {
-                throw new Exception("Missing closing parenthesis");
+                Errors.List.Add(new CompilingError("Missing closing parenthesis", tokens[position].PositionError));
             }
             position++;
             return expr;
@@ -287,7 +287,7 @@ public class Parser
                  LookAhead(tokens[position].Type, TokenType.Deck)||LookAhead(tokens[position].Type, TokenType.GraveYard)||
                  LookAhead(tokens[position].Type, TokenType.Field)||LookAhead(tokens[position].Type, TokenType.Board)||
                  LookAhead(tokens[position].Type, TokenType.Hand)|| 
-                 //FIXME: id here, there's nothing to fix
+                 //FIXME: id here, there's nothing to fix just remember it
                  LookAhead(tokens[position].Type, TokenType.Id))
         {
             position++; 
@@ -319,7 +319,7 @@ public class Parser
                 return new UnaryExpression(null, token);
             }
             else
-            throw new Exception($"Invalid Token: {tokens[position]}. Expected a none parameters method sintax");
+                Errors.List.Add(new CompilingError("Invalid Token, Expected a none parameters method sintax",token.PositionError));
         }
         else if (LookAhead(tokens[position].Type, TokenType.Push) ||LookAhead(tokens[position].Type, TokenType.SendBottom)
                 ||LookAhead(tokens[position].Type, TokenType.Remove)||LookAhead(tokens[position].Type, TokenType.HandOfPlayer)
@@ -342,7 +342,8 @@ public class Parser
                         }
                     }
                 }
-        throw new Exception("Not recognizable primary token");
+        Errors.List.Add(new CompilingError("Not recognizable primary token", tokens[position].PositionError));
+        return null;
     }
 
     private Expression ParsePropertyAssignment()
@@ -374,7 +375,7 @@ public class Parser
             if(Binary!= null)
                 return Binary;
             else
-                throw new Exception();
+               Errors.List.Add(new CompilingError("Unexpected null reference",token.PositionError));
         }
         else
         Errors.List.Add(new CompilingError("Unexpected Comma or Semicolon",token.PositionError));
@@ -404,7 +405,7 @@ public class Parser
                     if(Binary!= null)
                         return Binary;
                     else
-                        throw new Exception();
+                        Errors.List.Add(new CompilingError("Unexpected null reference",token.PositionError));
                 }
             }
         }
@@ -491,8 +492,10 @@ public List<Expression> ParseRanges()
             return ranges;
         }
         else
-            {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
-            return null;}
+        {
+            Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+            return null;
+        }
     }
 
 
@@ -514,7 +517,7 @@ private OnActivation ParseOnActivation()
             break;
         }
         else
-        throw new Exception($"{position} Invalid Token at {tokens[position].PositionError.Row} row and {tokens[position].PositionError.Column} column expected ????? in OnActivation");
+        Errors.List.Add(new CompilingError("Invalid token in OnActivation method",tokens[position].PositionError));
     }
     return activation;
 }
@@ -715,8 +718,10 @@ private OnActivation ParseOnActivation()
                     }
 
                 default:
-                    {Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
-                    return null;}
+                {
+                    Errors.List.Add(new CompilingError("Invalid token",tokens[position].PositionError));
+                    return null;
+                }
             }
         }
         return selector;
